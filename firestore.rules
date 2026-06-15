@@ -1,0 +1,321 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: Firebase Auth UID
+// Fields:
+//   - uid: string (required, immutable) - ID do usuário no Firebase Auth
+//   - email: string (required) - E-mail do usuário
+//   - displayName: string (required, max size: 100) - Nome de exibição
+//   - photoURL: string (optional, URL format) - Avatar do usuário
+//   - teamId: string (required, enum) - Time do usuário (ex: 'mississauga')
+//   - role: string (required, enum: 'admin', 'member') - Permissão do usuário
+//   - createdAt: timestamp (required, immutable) - Data de criação
+//
+// Collection: feed
+// Document ID: Auto-gerado
+// Fields:
+//   - title: string (required, max size: 200) - Título do post
+//   - content: string (required, max size: 5000) - Conteúdo da postagem
+//   - category: string (required, enum: 'ideia', 'iniciativa', 'duvida', 'link', 'skill')
+//   - status: string (required, enum: 'planejado', 'em_progresso', 'concluido', 'nao_aplicavel')
+//   - tags: list of strings (required, max size: 10) - Tags de categorização
+//   - author: string (required, max size: 100) - Nome do autor
+//   - authorUid: string (required, immutable) - UID do autor
+//   - teamId: string (required) - ID do time que pertence o feed
+//   - likes: number (required) - Contador de likes
+//   - likedBy: list of strings (required) - Lista de UIDs que deram like
+//   - createdAt: timestamp (required, immutable) - Data de criação
+//
+// Collection: environments
+// Document ID: Customizado (ex: 'vm-19')
+// Fields:
+//   - name: string (required, max size: 50) - Nome do ambiente
+//   - description: string (required, max size: 1000) - Descrição detalhada
+//   - status: string (required, enum: 'disponivel', 'em_uso', 'manutencao')
+//   - currentUser: string (optional, max size: 100) - Nome do usuário utilizando a VM
+//   - currentUserUid: string (optional) - UID do usuário utilizando a VM
+//   - ip: string (optional, max size: 45) - IP do ambiente
+//   - lastUpdated: timestamp (required) - Data da última reserva/liberação
+//   - teamId: string (required) - Time dono da VM
+//
+// Collection: ai_skills
+// Document ID: Customizado (ex: 'revisao-rotas-wsh')
+// Fields:
+//   - name: string (required, max size: 100) - Nome amigável da skill
+//   - description: string (required, max size: 1000) - Descrição de uso
+//   - promptTemplate: string (required, max size: 10000) - Corpo do prompt
+//   - arguments: list of maps (required) - Parâmetros do prompt
+//   - author: string (required, max size: 100) - Autor da skill
+//   - teamId: string (required) - Time dono da skill
+//   - updatedAt: timestamp (required) - Data de atualização
+//
+// Collection: workflows
+// Document ID: Auto-gerado ou customizado
+// Fields:
+//   - name: string (required, max size: 150) - Nome do fluxo
+//   - systemMaster: string (required, max size: 100) - ERP/Master
+//   - integrators: list of strings (required) - Lista de intermediários
+//   - destiny: string (required, max size: 100) - Destino
+//   - teamId: string (required) - Time dono do fluxo
+//   - createdAt: timestamp (required, immutable)
+//   - createdBy: string (required, max size: 100)
+//
+// Collection: workflow_routes
+// Document ID: Auto-gerado
+// Fields:
+//   - workflowId: string (required) - ID do workflow pai
+//   - fluxo: string (required, max size: 30) - Identificador do fluxo (ex: 'FLUXO-02')
+//   - nome: string (required, max size: 150) - Nome da rota
+//   - urlWta: string (optional, max size: 500)
+//   - projetoWta: string (optional, max size: 150)
+//   - rotaWtaBuscar: string (optional, max size: 200)
+//   - rotaPdvsyncEnviar: string (optional, max size: 200)
+//   - direcao: string (required, enum: 'enviar_pdvsync', 'enviar_wta', 'monitor', 'online_direto')
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.authorUid;
+    }
+
+    function uidUnchanged() {
+      return !('authorUid' in request.resource.data) ||
+        request.resource.data.authorUid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('authorUid' in request.resource.data) ||
+        request.resource.data.authorUid == resource.data.authorUid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidUrl(url) {
+      return url is string &&
+        (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isRecent(time) {
+      return time is timestamp &&
+             time > request.time - duration.value(5, 'm') &&
+             time <= request.time;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'displayName', 'teamId', 'role', 'createdAt']) &&
+             hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'teamId', 'role', 'createdAt', 'jiraUrl', 'jiraToken', 'tdnUrl', 'tdnToken', 'themePrimary', 'themeSecondary', 'jobRole', 'associatedTeams']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 100 &&
+             (!('photoURL' in data) || data.photoURL == '' || isValidUrl(data.photoURL)) &&
+             data.teamId is string &&
+             data.role in ['admin', 'member'] &&
+             (!('jobRole' in data) || data.jobRole is string) &&
+             (!('associatedTeams' in data) || data.associatedTeams is list);
+    }
+
+    function isValidFeedPost(data) {
+      return hasRequiredFields(['title', 'content', 'category', 'status', 'tags', 'author', 'authorUid', 'teamId', 'likes', 'likedBy', 'createdAt']) &&
+             hasOnlyAllowedFields(['id', 'title', 'content', 'category', 'status', 'tags', 'author', 'authorUid', 'teamId', 'likes', 'likedBy', 'createdAt', 'links']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 5000 &&
+             data.category in ['ideia', 'iniciativa', 'duvida', 'link', 'skill'] &&
+             data.status in ['planejado', 'em_progresso', 'concluido', 'nao_aplicavel'] &&
+             data.tags is list && data.tags.size() <= 10 &&
+             data.author is string && data.author.size() <= 100 &&
+             data.authorUid == request.auth.uid &&
+             data.likes is number &&
+             data.likedBy is list;
+    }
+
+    function isValidEnvironment(data) {
+      return hasRequiredFields(['name', 'description', 'status', 'lastUpdated', 'teamId']) &&
+             hasOnlyAllowedFields(['id', 'name', 'description', 'status', 'currentUser', 'currentUserUid', 'ip', 'lastUpdated', 'teamId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 50 &&
+             data.description is string && data.description.size() <= 1000 &&
+             data.status in ['disponivel', 'em_uso', 'manutencao'] &&
+             (!('ip' in data) || (data.ip is string && data.ip.size() <= 45));
+    }
+
+    function isValidAISkill(data) {
+      return hasRequiredFields(['name', 'description', 'promptTemplate', 'arguments', 'author', 'teamId', 'updatedAt']) &&
+             hasOnlyAllowedFields(['id', 'name', 'description', 'promptTemplate', 'arguments', 'author', 'teamId', 'updatedAt', 'copyCounter', 'type', 'status', 'impact', 'businessGoal']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.description is string && data.description.size() <= 1000 &&
+             data.promptTemplate is string && data.promptTemplate.size() <= 10000 &&
+             data.arguments is list &&
+             data.author is string && data.author.size() <= 100;
+    }
+
+    function isValidWorkflow(data) {
+      return hasRequiredFields(['name', 'systemMaster', 'integrators', 'destiny', 'teamId', 'createdAt', 'createdBy']) &&
+             hasOnlyAllowedFields(['id', 'name', 'systemMaster', 'integrators', 'destiny', 'teamId', 'createdAt', 'createdBy']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             data.systemMaster is string && data.systemMaster.size() <= 100 &&
+             data.integrators is list &&
+             data.destiny is string && data.destiny.size() <= 100 &&
+             data.createdBy is string && data.createdBy.size() <= 100;
+    }
+
+    function isValidWorkflowRoute(data) {
+      return hasRequiredFields(['workflowId', 'fluxo', 'nome', 'direcao']) &&
+             hasOnlyAllowedFields(['id', 'workflowId', 'fluxo', 'nome', 'urlWta', 'projetoWta', 'rotaWtaBuscar', 'rotaPdvsyncEnviar', 'direcao']) &&
+             data.workflowId is string &&
+             data.fluxo is string && data.fluxo.size() <= 30 &&
+             data.nome is string && data.nome.size() <= 150 &&
+             data.direcao in ['enviar_pdvsync', 'enviar_wta', 'monitor', 'online_direto'] &&
+             (!('urlWta' in data) || (data.urlWta is string && data.urlWta.size() <= 500)) &&
+             (!('projetoWta' in data) || (data.projetoWta is string && data.projetoWta.size() <= 150));
+    }
+
+    function isValidKnowledgeDoc(data) {
+      return hasRequiredFields(['title', 'content', 'category', 'tags', 'author', 'teamId', 'updatedAt']) &&
+             hasOnlyAllowedFields(['id', 'title', 'content', 'category', 'tags', 'author', 'authorUid', 'teamId', 'sourceUrl', 'updatedAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.content is string && data.content.size() <= 50000 &&
+             data.category is string && data.category.size() <= 100;
+    }
+
+    function isValidTeam(data) {
+      return hasRequiredFields(['name', 'createdAt']) &&
+             hasOnlyAllowedFields(['name', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // 1. Coleção de Usuários
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (
+        isOwner(userId) || 
+        (
+          resource.data.associatedTeams is list && 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId in resource.data.associatedTeams
+        )
+      );
+      
+      // Criação inicial e atualizações permitidas apenas pelo próprio dono
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && isOwner(userId);
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && isOwner(userId) &&
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    request.resource.data.role == resource.data.role; // Não permite auto-escalação de cargo
+      
+      allow delete: if false; // Perfil não pode ser deletado diretamente pelo app
+    }
+
+    // 2. Feed de Iniciativas
+    match /feed/{postId} {
+      allow read: if isAuthenticated(); // Qualquer usuário logado pode ler o feed
+      
+      allow create: if isAuthenticated() && isValidFeedPost(request.resource.data) && uidUnchanged();
+      allow update: if isAuthenticated() && isValidFeedPost(request.resource.data) && uidNotModified() &&
+                    (isDocOwner() || 
+                     // Permite que qualquer um atualize para dar Like, verificando se apenas likes e likedBy mudaram
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy']));
+      
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    // 3. Ambientes (VMs)
+    match /environments/{envId} {
+      allow read: if isAuthenticated();
+      
+      // Apenas administradores do time podem cadastrar ou remover VMs
+      allow create, delete: if isAuthenticated() && 
+                             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      // Edição de reserva (Check-in/Check-out) ou manutenção
+      allow update: if isAuthenticated() && isValidEnvironment(request.resource.data) &&
+                    (
+                      // Admin pode alterar tudo
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+                      // Membro do time pode alterar status, currentUser, currentUserUid e lastUpdated para check-in/out
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'currentUser', 'currentUserUid', 'lastUpdated'])
+                    );
+    }
+
+    // 4. AI Skills
+    match /ai_skills/{skillId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() && isValidAISkill(request.resource.data);
+      allow update: if isAuthenticated() && isValidAISkill(request.resource.data) &&
+                    request.resource.data.author == resource.data.author;
+      
+      allow delete: if isAuthenticated();
+    }
+
+    // 5. Workflows
+    match /workflows/{wfId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidWorkflow(request.resource.data);
+      allow update: if isAuthenticated() && isValidWorkflow(request.resource.data) &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAuthenticated();
+    }
+
+    // 6. Workflow Routes
+    match /workflow_routes/{routeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidWorkflowRoute(request.resource.data);
+      allow update: if isAuthenticated() && isValidWorkflowRoute(request.resource.data);
+      allow delete: if isAuthenticated();
+    }
+
+    // 7. Base de Conhecimento (Wiki)
+    match /knowledge_kb/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidKnowledgeDoc(request.resource.data);
+      allow update: if isAuthenticated() && isValidKnowledgeDoc(request.resource.data);
+      allow delete: if isAuthenticated();
+    }
+
+    // 8. Coleção de Times (Onboarding)
+    match /teams/{teamId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidTeam(request.resource.data);
+      allow update, delete: if false;
+    }
+  }
+}

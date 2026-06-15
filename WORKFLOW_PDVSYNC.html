@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WSH PDVSYNC — Diagrama de Fluxo Ponta a Ponta</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --erp:       #0d3b6e;
+      --erp-light: #1a5276;
+      --wsh:       #7d5c00;
+      --wsh-light: #b7860b;
+      --pdvsync:   #0b4c2a;
+      --pdvsync-light: #1a7a43;
+      --pdvomni:   #4a1270;
+      --pdvomni-light: #7d3cb0;
+      --envio:     #2980b9;
+      --receb:     #c0392b;
+      --online:    #8e44ad;
+      --monitor:   #d35400;
+      --bg:        #f4f6f9;
+      --card:      #ffffff;
+      --text:      #2c3e50;
+      --border:    #dce3eb;
+      --radius:    8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+    }
+
+    /* === SIDEBAR NAV === */
+    #sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: #1c2b3a;
+      color: #cdd6e0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      overflow-y: auto;
+      padding: 0;
+      z-index: 100;
+    }
+    #sidebar .logo {
+      background: #0d1f2d;
+      padding: 20px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .5px;
+      border-bottom: 1px solid #2e4057;
+    }
+    #sidebar .logo span { color: #f39c12; }
+    #sidebar nav { padding: 12px 0; }
+    #sidebar nav a {
+      display: block;
+      padding: 9px 20px;
+      color: #b0bec5;
+      text-decoration: none;
+      font-size: 13px;
+      transition: background .15s, color .15s;
+    }
+    #sidebar nav a:hover, #sidebar nav a.active {
+      background: #2e4057;
+      color: #fff;
+    }
+    #sidebar nav .section-label {
+      padding: 14px 20px 5px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #607d8b;
+    }
+
+    /* === MAIN CONTENT === */
+    #main {
+      margin-left: 240px;
+      flex: 1;
+      padding: 28px 32px;
+      max-width: 1300px;
+    }
+
+    h1 {
+      font-size: 24px;
+      color: #1a2942;
+      margin-bottom: 6px;
+    }
+    h1 span { color: var(--envio); }
+    .subtitle { color: #607d8b; font-size: 14px; margin-bottom: 28px; }
+    .subtitle a { color: var(--envio); }
+
+    h2 {
+      font-size: 18px;
+      color: #1a2942;
+      margin: 32px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+    h3 { font-size: 14px; color: #2c3e50; margin: 20px 0 10px; font-weight: 600; }
+
+    /* === CARDS === */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 14px;
+    }
+
+    /* === LEGEND BADGES === */
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .badge-envio   { background: #d6eaf8; color: var(--envio); }
+    .badge-receb   { background: #fadbd8; color: var(--receb); }
+    .badge-online  { background: #e8daef; color: var(--online); }
+    .badge-monitor { background: #fdebd0; color: var(--monitor); }
+
+    /* === ARCHITECTURE DIAGRAM === */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: 1fr 80px 1fr 80px 1fr 80px 1fr;
+      grid-template-rows: auto 30px auto 30px auto;
+      align-items: center;
+      gap: 0;
+      padding: 16px 0;
+    }
+    .arch-box {
+      border-radius: 8px;
+      padding: 16px 12px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .arch-box .title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .arch-box .sub  { font-size: 11px; font-weight: 400; opacity: .85; line-height: 1.5; }
+    .box-erp     { background: var(--erp); color: #fff; grid-column: 1; grid-row: 1 / 6; }
+    .box-wsh     { background: var(--wsh); color: #fff; }
+    .box-pdvsync { background: var(--pdvsync); color: #fff; }
+    .box-omni    { background: var(--pdvomni); color: #fff; }
+
+    .arch-arrow {
+      text-align: center;
+      font-size: 18px;
+      color: #888;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .arch-arrow .label { font-size: 9px; color: #999; }
+
+    .arch-tall {
+      grid-row: 1 / 6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* === FLOW STEPS === */
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .step-num {
+      background: var(--envio);
+      color: #fff;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      margin-top: 1px;
+    }
+    .step-num.receb { background: var(--receb); }
+    .step-content { flex: 1; }
+    .step-content strong { font-size: 13px; color: #1a2942; }
+    .step-content code {
+      display: block;
+      margin-top: 3px;
+      font-family: 'Consolas', monospace;
+      font-size: 11px;
+      background: #f0f3f7;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 8px;
+      color: #2c5282;
+      word-break: break-all;
+    }
+    .step-note { font-size: 11px; color: #607d8b; margin-top: 2px; }
+
+    /* === TABLES === */
+    .tbl-wrap { overflow-x: auto; margin-bottom: 16px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    thead tr { background: #eaf0f9; }
+    th {
+      padding: 9px 12px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: #4a6278;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      line-height: 1.45;
+    }
+    tr:hover td { background: #f8fafd; }
+    td code {
+      font-family: 'Consolas', monospace;
+      font-size: 11px;
+      background: #f0f3f7;
+      border-radius: 3px;
+      padding: 1px 5px;
+      color: #2c5282;
+      word-break: break-all;
+    }
+    td .proj {
+      display: inline-block;
+      font-size: 10.5px;
+      background: #e8f4f8;
+      color: #1a6080;
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-weight: 500;
+    }
+
+    /* direction badge in table */
+    .dir-envio   { background:#d6eaf8; color:var(--envio);   border-radius:4px; padding:2px 7px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .dir-receb   { background:#fadbd8; color:var(--receb);   border-radius:4px; padding:2px 7px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .dir-monitor { background:#fdebd0; color:var(--monitor); border-radius:4px; padding:2px 7px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .dir-util    { background:#eaf0ea; color:#27ae60;        border-radius:4px; padding:2px 7px; font-size:11px; font-weight:600; white-space:nowrap; }
+
+    /* === MERMAID override === */
+    .mermaid { margin: 10px 0; }
+
+    /* === SECTION HEADER COLORS === */
+    .sec-header {
+      padding: 8px 16px;
+      border-radius: 6px 6px 0 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 20px;
+    }
+    .sec-header + .card { border-radius: 0 0 var(--radius) var(--radius); margin-top: 0; }
+    .hdr-envio   { background: var(--envio); }
+    .hdr-receb   { background: var(--receb); }
+    .hdr-online  { background: var(--online); }
+    .hdr-monitor { background: var(--monitor); }
+    .hdr-fiscal  { background: #117a65; }
+    .hdr-preco   { background: #1a5276; }
+    .hdr-pgto    { background: #4a235a; }
+    .hdr-cad     { background: #6e2f1a; }
+    .hdr-util    { background: #27ae60; }
+
+    /* === LEGEND BOX === */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+
+    /* === SCROLLABLE SECTION ANCHOR === */
+    section { scroll-margin-top: 20px; }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 900px) {
+      #sidebar { display: none; }
+      #main { margin-left: 0; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="logo">WSH <span>PDVSYNC</span><br>Diagrama de Fluxo</div>
+  <nav>
+    <div class="section-label">Visão Geral</div>
+    <a href="#arch">Arquitetura Geral</a>
+    <a href="#sistemas">Sistemas &amp; Autenticação</a>
+
+    <div class="section-label">Fluxos de Dados</div>
+    <a href="#envio">Fluxo de Envio</a>
+    <a href="#recebimento">Fluxo de Recebimento</a>
+    <a href="#online">Processos Online</a>
+
+    <div class="section-label">Fluxo Visual</div>
+    <a href="#visual-compartilhamento">Compartilhamentos / Filiais</a>
+    <a href="#visual-perfil">Perfil &amp; Usuários</a>
+    <a href="#visual-fiscal">Fiscal Clássico</a>
+    <a href="#visual-reforma">Reforma Tributária</a>
+    <a href="#visual-estoque">Estoque</a>
+    <a href="#visual-preco">Preços</a>
+    <a href="#visual-pgto">Formas de Pagamento</a>
+    <a href="#visual-cad">Clientes &amp; Cadastros</a>
+    <a href="#visual-transac">Transacionais → WTA</a>
+    <a href="#visual-monitor">Monitor / Status</a>
+
+    <div class="section-label">Mapeamento</div>
+    <a href="#mapa-compartilhamento">Compartilhamentos / Filiais</a>
+    <a href="#mapa-fiscal">Fiscal / Tributação</a>
+    <a href="#mapa-produto">Produtos &amp; Estoque</a>
+    <a href="#mapa-preco">Preços</a>
+    <a href="#mapa-pgto">Formas de Pagamento</a>
+    <a href="#mapa-cad">Clientes &amp; Cadastros</a>
+    <a href="#mapa-transac">Transacionais (→ WTA)</a>
+    <a href="#mapa-monitor">Monitor / Status</a>
+
+    <div class="section-label">Operação</div>
+    <a href="#agendamentos">Agendamentos</a>
+    <a href="#projetos">Projetos WTA</a>
+  </nav>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+
+  <h1>WSH <span>PDVSYNC</span> — Diagrama de Fluxo Ponta a Ponta</h1>
+  <p class="subtitle">
+    Serviço: <strong>winthor-integracao-core</strong> &nbsp;|&nbsp;
+    38 Fluxos &nbsp;|&nbsp; 87 Rotas &nbsp;|&nbsp;
+    <a href="WORKFLOW_PDVSYNC.md">Ver documentação .md</a>
+  </p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--envio)"></div> Fluxo de Envio (WTA → PDVSYNC)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--receb)"></div> Fluxo de Recebimento (PDVSYNC → WTA)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--online)"></div> Processos Online (PDVOmni → WTA direto)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--monitor)"></div> Monitor / Status</div>
+  </div>
+
+  <!-- ======================================= -->
+  <!-- SECTION: ARQUITETURA GERAL              -->
+  <!-- ======================================= -->
+  <section id="arch">
+    <h2>1. Arquitetura Geral</h2>
+    <div class="card">
+      <div class="mermaid">
+flowchart LR
+    subgraph ERP["🏢  ERP WINTHOR  (Oracle DB)"]
+        direction TB
+        WTA["WTA APIs\n━━━━━━━━━━━━━━━━\nwinthor-filiais\nwinthor-estoque-vtex\nwinthor-pedido-venda\nwinthor-tributacao\nwinthor-integracao-precos\nwinthor-integracao-varejo\nwinthor-integracao-matcon\nwinthor-integracao-config\nwinthor-integracao-cliente\nwinthor-integracao-cadastros\nwinthor-ferramenta-usuario\nwinthor-venda"]
+    end
+
+    subgraph WSH["⚙️  WSH · winthor-integracao-core"]
+        ENGINE["Motor de Integração\n38 Fluxos | 87 Rotas\nTransformações JOLT"]
+    end
+
+    subgraph SYNC["🔄  PDVSYNC"]
+        PS["pdvsync.varejo.totvs.com.br\n43 Rotas ENVIAR / BUSCAR"]
+    end
+
+    subgraph PDV["🖥️  PDVOmni  (Frente de Caixa)"]
+        OMNI["Operações PDV\nVendas · Pedidos · Caixa"]
+    end
+
+    WTA -- "BUSCAR\n(Fluxos 01-14,17-18\n21-23,26-38)" --> ENGINE
+    ENGINE -- "ENVIAR\n(→ PDVSYNC)" --> PS
+    PS --> OMNI
+    OMNI -- "Transações geradas" --> PS
+    PS -- "BUSCAR\n(Fluxos 15-16,19-20,37)" --> ENGINE
+    ENGINE -- "ENVIAR\n(→ WTA)" --> WTA
+    OMNI -. "12 Processos Online\n(direto · sem WSH)" .-> WTA
+
+    style ERP fill:#0d3b6e,color:#fff,stroke:#0d3b6e
+    style WSH fill:#7d5c00,color:#fff,stroke:#7d5c00
+    style SYNC fill:#0b4c2a,color:#fff,stroke:#0b4c2a
+    style PDV fill:#4a1270,color:#fff,stroke:#4a1270
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================= -->
+  <!-- SECTION: SISTEMAS                       -->
+  <!-- ======================================= -->
+  <section id="sistemas">
+    <h2>2. Sistemas &amp; Autenticação</h2>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Sistema</th>
+              <th>Papel</th>
+              <th>URL Base</th>
+              <th>Autenticação</th>
+              <th>Expiração Token</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong style="color:var(--erp-light)">ERP Winthor / WTA</strong></td>
+              <td>Fonte e destino master dos dados do ERP</td>
+              <td><code>{{URL_BASE}}</code></td>
+              <td>Bearer Token<br><code>POST /winthor/autenticacao/v1/login</code></td>
+              <td>2 horas</td>
+            </tr>
+            <tr>
+              <td><strong style="color:var(--wsh-light)">WSH · winthor-integracao-core</strong></td>
+              <td>Motor de integração — executa os 38 Fluxos</td>
+              <td>—</td>
+              <td>Interno</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><strong style="color:var(--pdvsync-light)">PDVSYNC</strong></td>
+              <td>Camada de sincronização do PDV — armazena dados para o PDVOmni</td>
+              <td><code>https://pdvsync.varejo.totvs.com.br</code></td>
+              <td>OAuth 2.0 RAC<br><code>POST /autenticacao/oauth/token</code></td>
+              <td>20 minutos</td>
+            </tr>
+            <tr>
+              <td><strong style="color:var(--pdvomni-light)">PDVOmni</strong></td>
+              <td>Frente de caixa (POS) — consome dados do PDVSYNC e gera transações</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================= -->
+  <!-- SECTION: FLUXO DE ENVIO                 -->
+  <!-- ======================================= -->
+  <section id="envio">
+    <h2>3. Fluxo de Envio — WTA → PDVSYNC</h2>
+    <p style="font-size:13px;color:#555;margin-bottom:14px;">
+      Dados do ERP Winthor são sincronizados para o PDVSYNC, onde ficam disponíveis para o PDVOmni.<br>
+      <strong>Fluxos de Envio:</strong>
+      <span class="badge badge-envio">01 Compartilhamento Master</span>
+      <span class="badge badge-envio">02 Filiais Lojas</span>
+      <span class="badge badge-envio">03 Compartilhamento Lojas</span>
+      <span class="badge badge-envio">04 Perfil</span>
+      <span class="badge badge-envio">05 NCM CEST</span>
+      <span class="badge badge-envio">06 PisCofins</span>
+      <span class="badge badge-envio">07 ICMS</span>
+      <span class="badge badge-envio">08 Usuário Operador</span>
+      <span class="badge badge-envio">09 Produto</span>
+      <span class="badge badge-envio">10 Estoque</span>
+      <span class="badge badge-envio">11 Preço</span>
+      <span class="badge badge-envio">12 Operadora Cartão</span>
+      <span class="badge badge-envio">13 Planos Pgto</span>
+      <span class="badge badge-envio">14 Formas Pgto</span>
+      <span class="badge badge-envio">17 Clientes</span>
+      <span class="badge badge-envio">18 Status Pedido</span>
+      <span class="badge badge-envio">21 Dados Pgto</span>
+      <span class="badge badge-envio">22 Registrar IP</span>
+      <span class="badge badge-envio">23 RCA</span>
+      <span class="badge badge-envio">26–33 Cadastros/Preços</span>
+      <span class="badge badge-envio">34–38 Reforma Tributária</span>
+    </p>
+
+    <div class="card">
+      <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant WSH as ⚙️ WSH<br/>(winthor-integracao-core)
+    participant WTA as 🏢 WTA<br/>(ERP Winthor)
+    participant PS  as 🔄 PDVSYNC
+    participant PDV as 🖥️ PDVOmni
+
+    WSH->>WTA: POST /winthor/autenticacao/v1/login
+    WTA-->>WSH: Bearer Token (válido 2h)
+
+    WSH->>WTA: GET/POST {{URL_BASE}}/winthor/... (Rota BUSCAR)
+    WTA-->>WSH: Dados do ERP (JSON)
+
+    Note over WSH: Transformação JOLT / custom-totvs
+
+    WSH->>PS: POST /autenticacao/oauth/token (RAC OAuth)
+    PS-->>WSH: Access Token (válido 20min)
+
+    WSH->>PS: POST /controleprocesso/... (Criar Lote/Variável)
+    PS-->>WSH: ID do Lote
+
+    WSH->>PS: POST/PUT {{URL_PDVSYNC}}/... (Rota ENVIAR)
+    PS-->>WSH: 200 OK
+
+    WSH->>PS: PUT /controleprocesso/... (Fechar Lote)
+    Note over PS,PDV: Dados disponíveis para o PDVOmni
+    PDV->>PS: Consulta dados sincronizados
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================= -->
+  <!-- SECTION: FLUXO DE RECEBIMENTO           -->
+  <!-- ======================================= -->
+  <section id="recebimento">
+    <h2>4. Fluxo de Recebimento — PDVSYNC → WTA</h2>
+    <p style="font-size:13px;color:#555;margin-bottom:14px;">
+      Transações geradas no PDVOmni são coletadas do PDVSYNC e enviadas ao ERP Winthor.<br>
+      <strong>Fluxos de Recebimento:</strong>
+      <span class="badge badge-receb">15 Movimentações Caixa</span>
+      <span class="badge badge-receb">16 Vendas</span>
+      <span class="badge badge-receb">19 Pedido Recebido</span>
+      <span class="badge badge-receb">20 Pedido Cancelado</span>
+      <span class="badge badge-receb">37 Cadastrar Cliente</span>
+      &nbsp;
+      <span class="badge badge-monitor">24 Status Lote (Monitor)</span>
+      <span class="badge badge-monitor">25 Status Venda (Monitor)</span>
+    </p>
+
+    <div class="card">
+      <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant PDV as 🖥️ PDVOmni
+    participant PS  as 🔄 PDVSYNC
+    participant WSH as ⚙️ WSH<br/>(winthor-integracao-core)
+    participant WTA as 🏢 WTA<br/>(ERP Winthor)
+
+    PDV->>PS: Registra transação (venda / pedido / caixa)
+    Note over PS: Transação fica pendente no PDVSYNC
+
+    Note over WSH: Agendamento dispara a cada 300s (5 min)
+
+    WSH->>PS: POST /autenticacao/oauth/token (RAC OAuth)
+    PS-->>WSH: Access Token (válido 20min)
+
+    WSH->>PS: GET {{URL_PDVSYNC}}/comercial/... (Rota BUSCAR PDVSYNC)
+    PS-->>WSH: Lista de transações pendentes
+
+    Note over WSH: Transformação JOLT / custom-totvs
+
+    WSH->>WTA: POST /winthor/autenticacao/v1/login
+    WTA-->>WSH: Bearer Token (válido 2h)
+
+    WSH->>WTA: POST/PUT {{URL_BASE}}/winthor/varejo/... (Rota ENVIAR WTA)
+    WTA-->>WSH: Status de processamento
+
+    WSH->>PS: PUT {{URL_PDVSYNC}}/controle/... (Atualizar status)
+    Note over PS,PDV: Status atualizado no PDVSYNC
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================= -->
+  <!-- SECTION: PROCESSOS ONLINE               -->
+  <!-- ======================================= -->
+  <section id="online">
+    <h2>5. Processos Online — PDVOmni → WTA (direto)</h2>
+    <p style="font-size:13px;color:#555;margin-bottom:14px;">
+      O PDVOmni realiza requisições <strong>diretamente</strong> ao WTA para operações em tempo real, <strong>sem intermediação do WSH</strong>.
+    </p>
+
+    <div class="card">
+      <div class="mermaid">
+flowchart LR
+    OMNI["🖥️ PDVOmni\n(Frente de Caixa)"]
+
+    subgraph MAT["winthor-integracao-matcon"]
+        direction TB
+        M1["EndpointPreVendaEnvio\nEndpointNotaEntradaEnvio\nEndpointPreVendaAtualiza\nEndpointReservaEstoqueEnvio\nEndpointIdentificadorPDV\nEndpointPreVendaConsultaPedido\nEndpointPreVendaConsultaListaPedido"]
+    end
+
+    subgraph VAR["winthor-integracao-varejo"]
+        V1["EndpointCreditoConsumo\nEndpointCreditoConsulta"]
+    end
+
+    subgraph EST["winthor-estoque-vtex"]
+        E1["EndpointNotaSaidaEnvio\nEndpointEstoqueConsulta"]
+    end
+
+    subgraph CLI["winthor-integracao-cliente"]
+        C1["EndpointFormasCondicoesCliente"]
+    end
+
+    OMNI -- "/winthor/varejo/matcon/v1/orders/pdvsync\n/winthor/varejo/matcon/v1/pdv/detalhepdv" --> MAT
+    OMNI -- "/winthor/varejo/v1/credito-cliente" --> VAR
+    OMNI -- "/api/stock-vtex/v1/available/pdv-sync" --> EST
+    OMNI -- "/winthor/cliente/v1/payments/pdvsync" --> CLI
+
+    style MAT fill:#0d3b6e,color:#fff,stroke:#0d3b6e
+    style VAR fill:#0b4c2a,color:#fff,stroke:#0b4c2a
+    style EST fill:#7d5c00,color:#fff,stroke:#7d5c00
+    style CLI fill:#4a1270,color:#fff,stroke:#4a1270
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="color:var(--online)">Tabela de Processos Online</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Endpoint PDVOmni</th>
+              <th>Método</th>
+              <th>API WTA</th>
+              <th>Projeto WTA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>EndpointPreVendaEnvio</td><td>POST</td><td><code>/winthor/varejo/matcon/v1/orders/pdvsync</code></td><td><span class="proj">winthor-integracao-matcon</span></td></tr>
+            <tr><td>EndpointCreditoConsumo</td><td>POST</td><td><code>/winthor/varejo/v1/credito-cliente</code></td><td><span class="proj">winthor-integracao-varejo</span></td></tr>
+            <tr><td>EndpointNotaSaidaEnvio</td><td>POST</td><td><code>/api/stock-vtex/v1/available/pdv-sync</code></td><td><span class="proj">winthor-estoque-vtex</span></td></tr>
+            <tr><td>EndpointCreditoConsulta</td><td>GET</td><td><code>/winthor/varejo/v1/credito-cliente/list</code></td><td><span class="proj">winthor-integracao-varejo</span></td></tr>
+            <tr><td>EndpointEstoqueConsulta</td><td>GET</td><td><code>/api/stock-vtex/v1/available/pdv-sync</code></td><td><span class="proj">winthor-estoque-vtex</span></td></tr>
+            <tr><td>EndpointIdentificadorPDV</td><td>GET</td><td><code>/winthor/varejo/matcon/v1/pdv/detalhepdv</code></td><td><span class="proj">winthor-integracao-matcon</span></td></tr>
+            <tr><td>EndpointNotaEntradaEnvio</td><td>POST</td><td><code>/winthor/varejo/matcon/v1/orders/pdvsync</code></td><td><span class="proj">winthor-integracao-matcon</span></td></tr>
+            <tr><td>EndpointPreVendaAtualiza</td><td>PUT</td><td><code>/winthor/varejo/matcon/v1/orders/pdvsync</code></td><td><span class="proj">winthor-integracao-matcon</span></td></tr>
+            <tr><td>EndpointReservaEstoqueEnvio</td><td>POST</td><td><code>/winthor/varejo/matcon/v1/orders/pdvsync</code></td><td><span class="proj">winthor-integracao-matcon</span></td></tr>
+            <tr><td>EndpointFormasCondicoesCliente</td><td>GET</td><td><code>/winthor/cliente/v1/payments/pdvsync</code></td><td><span class="proj">winthor-integracao-cliente</span></td></tr>
+            <tr><td>EndpointPreVendaConsultaPedido</td><td>GET</td><td><code>/winthor/varejo/matcon/v1/orders/pdvsync/consulta</code></td><td><span class="proj">winthor-integracao-matcon</span></td></tr>
+            <tr><td>EndpointPreVendaConsultaListaPedido</td><td>GET</td><td><code>/winthor/varejo/matcon/v1/orders/pdvsync/consulta</code></td><td><span class="proj">winthor-integracao-matcon</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================= -->
+  <!-- SECTION: FLUXO VISUAL POR CATEGORIA     -->
+  <!-- ======================================= -->
+  <section id="visual-fluxos">
+    <h2>Fluxo Visual por Categoria</h2>
+    <p style="font-size:13px;color:#555;margin-bottom:20px;">
+      Cada diagrama representa o caminho completo de uma categoria: <strong>API WTA</strong> (agrupada por projeto WTA)
+      → <strong>WSH</strong> (transformação JOLT) → <strong>API PDVSYNC</strong> → <strong>PDVOmni</strong>.
+      Fluxos de recebimento exibem a direção inversa: PDVOmni → PDVSYNC → WTA.
+    </p>
+
+    <!-- COMPARTILHAMENTOS & FILIAIS -->
+    <section id="visual-compartilhamento">
+      <div class="sec-header hdr-envio">Envio — Compartilhamentos &amp; Filiais · Fluxos 01 · 02 · 03</div>
+      <div class="card">
+        <div class="mermaid">
+flowchart LR
+    subgraph WF["🏢 winthor-filiais"]
+        R02["FLUXO-02 · Buscar Filiais Lojas\nGET /api/branch/v1/"]
+        R03["FLUXO-03 · Buscar Filiais Compartilhamento\nGET /api/branch/v1/"]
+    end
+    subgraph WI01["🏢 interno WSH"]
+        R01["FLUXO-01 · PDVSYNC COMPARTILHAMENTO MASTER\ndados de configuração interna"]
+    end
+    subgraph PS01["🔄 PDVSYNC"]
+        P02["ENVIAR LOJAS\n/dadosbasicos/loja"]
+        P03["ENVIAR COMPARTILHAMENTOS\n/dadosbasicos/compartilhamento"]
+        P01["ENVIAR COMPARTILHAMENTOS\n/dadosbasicos/compartilhamento"]
+    end
+    OMNI01["🖥️ PDVOmni"]
+
+    R02 -- "via WSH · JOLT" --> P02
+    R03 -- "via WSH · JOLT" --> P03
+    R01 -- "via WSH · JOLT" --> P01
+    P02 & P03 & P01 --> OMNI01
+
+    style WF    fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style WI01  fill:#1a2e4a,color:#fff,stroke:#2e4a6e
+    style PS01  fill:#0b4c2a,color:#fff,stroke:#145a32
+    style OMNI01 fill:#4a1270,color:#fff,stroke:#7d3cb0
+        </div>
+      </div>
+    </section>
+
+    <!-- PERFIL & USUARIOS -->
+    <section id="visual-perfil">
+      <div class="sec-header hdr-envio">Envio — Perfil &amp; Usuários · Fluxos 04 · 08</div>
+      <div class="card">
+        <div class="mermaid">
+flowchart LR
+    subgraph WI04["🏢 interno WSH"]
+        R04["FLUXO-04 · BUSCAR PERFIL PADRAO\ndados de perfil padrão internos"]
+    end
+    subgraph WFU["🏢 winthor-ferramenta-usuario"]
+        R08["FLUXO-08 · Buscar Usuario Operador\nGET /winthor/ferramenta/usuario/v1/listar/detalhes"]
+    end
+    subgraph PS04["🔄 PDVSYNC"]
+        P04["SALVAR PERFIL\n/dadosbasicos/perfil"]
+        P08["SALVAR USUARIO OPERADOR\n/dadosbasicos/usuario"]
+    end
+    OMNI04["🖥️ PDVOmni"]
+
+    R04 -- "via WSH · JOLT" --> P04
+    R08 -- "via WSH · JOLT" --> P08
+    P04 & P08 --> OMNI04
+
+    style WI04  fill:#1a2e4a,color:#fff,stroke:#2e4a6e
+    style WFU   fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style PS04  fill:#0b4c2a,color:#fff,stroke:#145a32
+    style OMNI04 fill:#4a1270,color:#fff,stroke:#7d3cb0
+        </div>
+      </div>
+    </section>
+
+    <!-- FISCAL CLASSICO + PRODUTO -->
+    <section id="visual-fiscal">
+      <div class="sec-header hdr-fiscal">Envio — Fiscal Tributação Clássica · Fluxos 05 · 06 · 07 · 09</div>
+      <div class="card">
+        <div class="mermaid">
+flowchart LR
+    subgraph WTR["🏢 winthor-tributacao"]
+        R05["FLUXO-05 · Buscar Imposto NCM PDV\nGET /winthor/tributacao/v0/saida/ncm/consultar"]
+        R06["FLUXO-06 · Buscar Pis Cofins\nGET /winthor/tributacao/v0/saida/piscofins/consultar"]
+        R07["FLUXO-07 · Buscar ICMS\nGET /winthor/tributacao/v0/saida/icms/consultar"]
+        R09["FLUXO-09 · Buscar Produto PDV\nGET /winthor/tributacao/v0/saida/produtotributacao/consultar"]
+    end
+    subgraph PS05["🔄 PDVSYNC"]
+        P05["SALVAR IMPOSTO NCM\n/imposto/ncmcest"]
+        P06["ENVIAR PIS COFINS\n/imposto/piscofins"]
+        P07["ENVIAR ICMS\n/imposto/icms"]
+        P09["SALVAR PRODUTO\n/produto/produto"]
+    end
+    OMNI05["🖥️ PDVOmni"]
+
+    R05 -- "via WSH · JOLT" --> P05
+    R06 -- "via WSH · JOLT" --> P06
+    R07 -- "via WSH · JOLT" --> P07
+    R09 -- "via WSH · JOLT" --> P09
+    P05 & P06 & P07 & P09 --> OMNI05
+
+    style WTR   fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style PS05  fill:#0b4c2a,color:#fff,stroke:#145a32
+    style OMNI05 fill:#4a1270,color:#fff,stroke:#7d3cb0
+        </div>
+      </div>
+    </section>
+
+    <!-- REFORMA TRIBUTARIA -->
+    <section id="visual-reforma">
+      <div class="sec-header hdr-fiscal">Envio — Reforma Tributária · Fluxos 34 · 35 · 36 · 38</div>
+      <div class="card">
+        <div class="mermaid">
+flowchart LR
+    subgraph WTR2["🏢 winthor-tributacao"]
+        R34["FLUXO-34 · BUSCAR IMPOSTO REFORMA TRIBUTARIA\nGET /winthor/tributacao/v0/saida/tributacao/consultar/pdvsync"]
+        R35["FLUXO-35 · BUSCAR NCM REFORMA TRIBUTARIA\nGET /winthor/tributacao/v0/saida/tributacao/excecao/consultar/pdvsync"]
+        R36["FLUXO-36 · BUSCAR PRODUTO REFORMA TRIBUTARIA\nGET /winthor/tributacao/v0/saida/tributacao/excecao/consultar/pdvsync"]
+        R38["FLUXO-38 · BUSCAR CFOP REFORMA TRIBUTARIA\nGET /winthor/tributacao/v0/saida/tributacao/..."]
+    end
+    subgraph PS34["🔄 PDVSYNC"]
+        P34["ENVIAR IMPOSTO REFORMA\n/imposto/reformatributaria"]
+        P35["ENVIAR NCM REFORMA TRIBUTARIA\n/imposto/ncm/reformatributaria"]
+        P36["ENVIAR PRODUTO REFORMA TRIBUT\n/produto/reformatributaria"]
+        P38["ENVIAR CFOP REFORMA TRIBUTARIA\n/imposto/cfop/reformatributaria"]
+    end
+    OMNI34["🖥️ PDVOmni"]
+
+    R34 -- "via WSH · JOLT" --> P34
+    R35 -- "via WSH · JOLT" --> P35
+    R36 -- "via WSH · JOLT" --> P36
+    R38 -- "via WSH · JOLT" --> P38
+    P34 & P35 & P36 & P38 --> OMNI34
+
+    style WTR2  fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style PS34  fill:#0b4c2a,color:#fff,stroke:#145a32
+    style OMNI34 fill:#4a1270,color:#fff,stroke:#7d3cb0
+        </div>
+      </div>
+    </section>
+
+    <!-- ESTOQUE -->
+    <section id="visual-estoque">
+      <div class="sec-header hdr-envio">Envio — Estoque · Fluxo 10</div>
+      <div class="card">
+        <div class="mermaid">
+flowchart LR
+    subgraph WEV["🏢 winthor-estoque-vtex"]
+        R10["FLUXO-10 · Buscar Estoque\nGET /api/stock-vtex/v1/available/list"]
+    end
+    subgraph PS10["🔄 PDVSYNC"]
+        P10["ENVIAR ESTOQUE DISPONIVEL\n/estoque/disponivel"]
+    end
+    OMNI10["🖥️ PDVOmni"]
+
+    R10 -- "via WSH · JOLT" --> P10
+    P10 --> OMNI10
+
+    style WEV   fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style PS10  fill:#0b4c2a,color:#fff,stroke:#145a32
+    style OMNI10 fill:#4a1270,color:#fff,stroke:#7d3cb0
+        </div>
+      </div>
+    </section>
+
+    <!-- PRECOS -->
+    <section id="visual-preco">
+      <div class="sec-header hdr-preco">Envio — Preços · Fluxos 11 · 29 · 30 · 32 · 33</div>
+      <div class="card">
+        <div class="mermaid">
+flowchart LR
+    subgraph WPV["🏢 winthor-pedido-venda"]
+        R11["FLUXO-11 · Buscar Preco Produto\nGET /api/wholesale/v1/price/discount-policy"]
+    end
+    subgraph WIP["🏢 winthor-integracao-precos"]
+        R29["FLUXO-29 · Buscar Preco Regiao\nGET /winthor/precos/v1/precos-regioes"]
+        R30["FLUXO-30 · Buscar Preco Embalagem\nGET /winthor/precos/v1/precos-embalagens"]
+        R32["FLUXO-32 · Buscar Preco Fixo\nGET /winthor/precos/v1/precos-fixos"]
+        R33["FLUXO-33 · Buscar Desconto e Acrescimo\nGET /winthor/precos/v1/politica-desconto"]
+    end
+    subgraph PS11["🔄 PDVSYNC"]
+        P11["ENVIAR PRECO PRODUTO\n/preco/produto"]
+        P29["ENVIAR PRECO REGIAO\n/preco/regiao"]
+        P30["ENVIAR PRECO EMBALAGEM\n/preco/embalagem"]
+        P32["ENVIAR PRECO FIXO\n/preco/fixo"]
+        P33["ENVIAR DESCONTO E ACRESCIMO\n/preco/politica"]
+    end
+    OMNI11["🖥️ PDVOmni"]
+
+    R11 -- "via WSH · JOLT" --> P11
+    R29 -- "via WSH · JOLT" --> P29
+    R30 -- "via WSH · JOLT" --> P30
+    R32 -- "via WSH · JOLT" --> P32
+    R33 -- "via WSH · JOLT" --> P33
+    P11 & P29 & P30 & P32 & P33 --> OMNI11
+
+    style WPV   fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style WIP   fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style PS11  fill:#0b4c2a,color:#fff,stroke:#145a32
+    style OMNI11 fill:#4a1270,color:#fff,stroke:#7d3cb0
+        </div>
+      </div>
+    </section>
+
+    <!-- FORMAS DE PAGAMENTO -->
+    <section id="visual-pgto">
+      <div class="sec-header hdr-pgto">Envio — Formas de Pagamento · Fluxos 12 · 13 · 14 · 21</div>
+      <div class="card">
+        <div class="mermaid">
+flowchart LR
+    subgraph WV["🏢 winthor-venda"]
+        R12["FLUXO-12 · Buscar Operadora PDV\nGET /winthor/venda/v0/operadoras"]
+        R13["FLUXO-13 · Buscar planos de pgto\nGET /winthor/venda/v0/planos-pagamentos"]
+    end
+    subgraph WI12["🏢 interno WSH"]
+        R14["FLUXO-14 · Buscar Tipos Cobrancas\nURL a definir"]
+        R21["FLUXO-21 · DADOS PAGAMENTO\ndados internos"]
+    end
+    subgraph PS12["🔄 PDVSYNC"]
+        P12["SALVAR OPERADORA\n/formapagto/operadora"]
+        P13["ENVIAR PLANOS DE PGTO\n/formapagto/plano"]
+        P14["ENVIAR FORMAS DE PGTO\n/formapagto/forma"]
+        P21["DADOS PAGAMENTO\n/formapagto/dados"]
+    end
+    OMNI12["🖥️ PDVOmni"]
+
+    R12 -- "via WSH · JOLT" --> P12
+    R13 -- "via WSH · JOLT" --> P13
+    R14 -- "via WSH · JOLT" --> P14
+    R21 -- "via WSH · JOLT" --> P21
+    P12 & P13 & P14 & P21 --> OMNI12
+
+    style WV    fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style WI12  fill:#1a2e4a,color:#fff,stroke:#2e4a6e
+    style PS12  fill:#0b4c2a,color:#fff,stroke:#145a32
+    style OMNI12 fill:#4a1270,color:#fff,stroke:#7d3cb0
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENTES & CADASTROS -->
+    <section id="visual-cad">
+      <div class="sec-header hdr-cad">Envio — Clientes &amp; Cadastros · Fluxos 17 · 26 · 27 · 28 · 31</div>
+      <div class="card">
+        <div class="mermaid">
+flowchart LR
+    subgraph WCPV["🏢 winthor-pedido-venda"]
+        R17["FLUXO-17 · Buscar Clientes\nGET /api/wholesale/v1/customer/list"]
+    end
+    subgraph WCA["🏢 winthor-integracao-cadastros"]
+        R26["FLUXO-26 · Buscar Profissionais\nGET /winthor/cadastros/v1/profissional"]
+    end
+    subgraph WCL["🏢 winthor-integracao-cliente"]
+        R27["FLUXO-27 · Buscar Regiao PDV\nGET /winthor/cliente/v1/regiao"]
+        R28["FLUXO-28 · Buscar Ramo Atividade\nGET /winthor/cliente/v1/ramoatividade"]
+        R31["FLUXO-31 · Buscar Grupo Campanha Cliente\nGET /winthor/cliente/v1/grupoCampanha"]
+    end
+    subgraph PS17["🔄 PDVSYNC"]
+        P17["SALVAR CLIENTES\n/cliente/cliente"]
+        P26["SALVAR PROFISSIONAL\n/cliente/profissional"]
+        P27["SALVAR REGIAO\n/cliente/regiao"]
+        P28["SALVAR RAMO ATIVIDADE\n/cliente/ramoatividade"]
+        P31["SALVAR GRUPO CAMPANHA CLIENTE\n/cliente/grupocampanha"]
+    end
+    OMNI17["🖥️ PDVOmni"]
+
+    R17 -- "via WSH · JOLT" --> P17
+    R26 -- "via WSH · JOLT" --> P26
+    R27 -- "via WSH · JOLT" --> P27
+    R28 -- "via WSH · JOLT" --> P28
+    R31 -- "via WSH · JOLT" --> P31
+    P17 & P26 & P27 & P28 & P31 --> OMNI17
+
+    style WCPV  fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style WCA   fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style WCL   fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style PS17  fill:#0b4c2a,color:#fff,stroke:#145a32
+    style OMNI17 fill:#4a1270,color:#fff,stroke:#7d3cb0
+        </div>
+      </div>
+    </section>
+
+    <!-- TRANSACIONAIS RECEBIMENTO PDVOmni → WTA -->
+    <section id="visual-transac">
+      <div class="sec-header hdr-receb">Recebimento — Transacionais PDVOmni → WTA · Fluxos 15 · 16 · 19 · 20 · 37</div>
+      <div class="card">
+        <div class="mermaid">
+flowchart LR
+    OMNI15["🖥️ PDVOmni\ngera transação"]
+    subgraph PS15["🔄 PDVSYNC\nagendamento 300s"]
+        P15["BUSCAR MOVIMENTACOES CAIXA\n/comercial/movimentacao"]
+        P16["BUSCAR VENDAS\n/comercial/venda"]
+        P19["BUSCAR PEDIDOS RECEBIDO\n/comercial/pedido/recebido"]
+        P20["BUSCAR PEDIDOS CANCELADA\n/comercial/pedido/cancelado"]
+        P37["BUSCAR CLIENTES\n/cliente/cliente"]
+    end
+    subgraph WIV["🏢 winthor-integracao-varejo"]
+        W15["FLUXO-15 · Enviar movimentacao caixa\nPOST /winthor/varejo/v1/movimentacao"]
+        W16["FLUXO-16 · Enviar venda\nPOST /winthor/varejo/v1/movimentacao/venda"]
+    end
+    subgraph WIM["🏢 winthor-integracao-matcon"]
+        W19["FLUXO-19 · ENVIAR PEDIDO RECEBIDO\nPOST /winthor/varejo/matcon/v1/orders/pdvsync"]
+        W20["FLUXO-20 · ENVIAR PEDIDO CANCELADO\nPOST /winthor/varejo/matcon/v1/orders/pdvsync"]
+    end
+    subgraph WI37["🏢 a definir"]
+        W37["FLUXO-37 · ENVIAR CLIENTE\nURL não definida"]
+    end
+
+    OMNI15 --> P15 & P16 & P19 & P20 & P37
+    P15 -- "via WSH · JOLT" --> W15
+    P16 -- "via WSH · JOLT" --> W16
+    P19 -- "via WSH · JOLT" --> W19
+    P20 -- "via WSH · JOLT" --> W20
+    P37 -- "via WSH · JOLT" --> W37
+
+    style OMNI15 fill:#4a1270,color:#fff,stroke:#7d3cb0
+    style PS15   fill:#0b4c2a,color:#fff,stroke:#145a32
+    style WIV    fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style WIM    fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style WI37   fill:#1a2e4a,color:#fff,stroke:#2e4a6e
+        </div>
+      </div>
+    </section>
+
+    <!-- MONITOR / STATUS -->
+    <section id="visual-monitor">
+      <div class="sec-header hdr-monitor">Monitor / Status · Fluxos 18 · 23 · 24 · 25</div>
+      <div class="card">
+        <div class="mermaid">
+flowchart LR
+    subgraph WPVM["🏢 winthor-pedido-venda"]
+        R18["FLUXO-18 · Buscar status pedido\nGET /api/wholesale/v1/orders/list"]
+    end
+    subgraph WIMM["🏢 winthor-integracao-matcon"]
+        R23["FLUXO-23 · CONSULTA RCA\nGET /winthor/varejo/matcon/v1/rca/consulta"]
+    end
+    subgraph WICFG["🏢 winthor-integracao-config"]
+        R24A["FLUXO-24 · Buscar lote PDV\nGET /winthor/integracao/fulfillment/v1/lote"]
+        R24B["FLUXO-24 · Atualizar status lote PDV\nPUT /winthor/integracao/fulfillment/v1/lote"]
+        R24C["FLUXO-24 · Finalizar integra status lote PDV\nPUT /winthor/integracao/fulfillment/v1/lote"]
+        R25B["FLUXO-25 · Atualizar status venda monitor\nPUT /winthor/integracao/fulfillment/v1/integracao"]
+    end
+    subgraph WIV2["🏢 winthor-integracao-varejo"]
+        R25A["FLUXO-25 · Buscar Venda Monitor\nGET /winthor/varejo/v1/retorno/venda"]
+    end
+    subgraph PSM["🔄 PDVSYNC"]
+        PM18["ENVIA STATUS PEDIDO\n/controle/status"]
+        PM23["ATUALIZAR STATUS\n/controle/rca"]
+        PM24["CONSULTAR LOTE\n/controleprocesso/lote"]
+        PM25["ATUALIZAR STATUS VENDA MONITOR\n/controle/venda"]
+    end
+    OMNIM["🖥️ PDVOmni"]
+
+    R18  -- "via WSH" --> PM18
+    R23  -- "via WSH" --> PM23
+    R24A & R24B & R24C -- "via WSH" --> PM24
+    R25A & R25B -- "via WSH" --> PM25
+    PM18 & PM24 & PM25 --> OMNIM
+
+    style WPVM  fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style WIMM  fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style WICFG fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style WIV2  fill:#0d3b6e,color:#fff,stroke:#1a5276
+    style PSM   fill:#0b4c2a,color:#fff,stroke:#145a32
+    style OMNIM fill:#4a1270,color:#fff,stroke:#7d3cb0
+        </div>
+      </div>
+    </section>
+
+  </section>
+
+  <!-- ======================================= -->
+  <!-- SECTION: MAPEAMENTO                     -->
+  <!-- ======================================= -->
+  <section id="mapeamento">
+    <h2>6. Mapeamento Completo de Fluxos, Rotas e Projetos</h2>
+
+    <!-- COMPARTILHAMENTO / FILIAIS -->
+    <section id="mapa-compartilhamento">
+      <div class="sec-header hdr-envio">Compartilhamentos &amp; Filiais — Fluxos 01, 02, 03</div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Fluxo</th><th>Nome</th><th>Rota WTA (BUSCAR)</th><th>URL WTA</th><th>Projeto WTA</th><th>Rota PDVSYNC (ENVIAR)</th><th>Dir.</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>FLUXO-01</td><td>Compartilhamento Master</td><td>WTA - PDVSYNC COMPARTILHAMENTO MASTER</td><td><em>N/A</em></td><td><em>N/A</em></td><td>PDVSYNC - ENVIAR COMPARTILHAMENTOS</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-02</td><td>Filiais Lojas</td><td>WTA - Buscar Filiais Lojas</td><td><code>/api/branch/v1/</code></td><td><span class="proj">winthor-filiais</span></td><td>PDVSYNC - ENVIAR LOJAS</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-03</td><td>Compartilhamento Lojas</td><td>WTA - Buscar Filiais Compartilhamento</td><td><code>/api/branch/v1/</code></td><td><span class="proj">winthor-filiais</span></td><td>PDVSYNC - ENVIAR COMPARTILHAMENTOS</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PERFIL E USUARIOS -->
+    <section id="mapa-perfil">
+      <div class="sec-header hdr-envio">Perfil &amp; Usuários — Fluxos 04, 08</div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Fluxo</th><th>Nome</th><th>Rota WTA (BUSCAR)</th><th>URL WTA</th><th>Projeto WTA</th><th>Rota PDVSYNC (ENVIAR)</th><th>Dir.</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>FLUXO-04</td><td>Perfil</td><td>WTA - BUSCAR PERFIL PADRAO</td><td><em>N/A</em></td><td><em>N/A</em></td><td>PDVSYNC - SALVAR PERFIL</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-08</td><td>Usuario Operador</td><td>WTA - Buscar Usuario Operador</td><td><code>/winthor/ferramenta/usuario/v1/listar/detalhes</code></td><td><span class="proj">winthor-ferramenta-usuario</span></td><td>PDVSYNC - SALVAR USUARIO OPERADOR</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FISCAL -->
+    <section id="mapa-fiscal">
+      <div class="sec-header hdr-fiscal">Fiscal / Tributação — Fluxos 05, 06, 07, 34, 35, 36, 38</div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Fluxo</th><th>Nome</th><th>Rota WTA (BUSCAR)</th><th>URL WTA</th><th>Projeto WTA</th><th>Rota PDVSYNC (ENVIAR)</th><th>Dir.</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>FLUXO-05</td><td>NCM CEST</td><td>WTA - Buscar Imposto NCM PDV</td><td><code>/winthor/tributacao/v0/saida/ncm/consultar</code></td><td><span class="proj">winthor-tributacao</span></td><td>PDVSYNC - SALVAR IMPOSTO NCM</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-06</td><td>PisCofins</td><td>WTA - Buscar Pis Cofins</td><td><code>/winthor/tributacao/v0/saida/piscofins/consultar</code></td><td><span class="proj">winthor-tributacao</span></td><td>PDVSYNC - ENVIAR PIS COFINS</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-07</td><td>ICMS</td><td>WTA - Buscar ICMS</td><td><code>/winthor/tributacao/v0/saida/icms/consultar</code></td><td><span class="proj">winthor-tributacao</span></td><td>PDVSYNC - ENVIAR ICMS</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-34</td><td>Imposto Reforma Tributaria</td><td>WTA - BUSCAR IMPOSTO REFORMA TRIBUTARIA</td><td><code>/winthor/tributacao/v0/saida/tributacao/consultar/pdvsync</code></td><td><span class="proj">winthor-tributacao</span></td><td>PDVSYNC - ENVIAR IMPOSTO REFORMA</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-35</td><td>Filtro NCM Reforma Tributaria</td><td>WTA - BUSCAR NCM REFORMA TRIBUTARIA</td><td><code>/winthor/tributacao/v0/saida/tributacao/excecao/consultar/pdvsync</code></td><td><span class="proj">winthor-tributacao</span></td><td>PDVSYNC - ENVIAR NCM REFORMA TRIBUTARIA</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-36</td><td>Filtro Produto Reforma Tributaria</td><td>WTA - BUSCAR PRODUTO REFORMA TRIBUTARIA</td><td><code>/winthor/tributacao/v0/saida/tributacao/excecao/consultar/pdvsync</code></td><td><span class="proj">winthor-tributacao</span></td><td>PDVSYNC - ENVIAR PRODUTO REFORMA TRIBUT</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-38</td><td>Filtro CFOP Reforma Tributaria</td><td>WTA - BUSCAR CFOP REFORMA TRIBUTARIA</td><td><code>/winthor/tributacao/v0/saida/tributacao/...</code></td><td><span class="proj">winthor-tributacao</span></td><td>PDVSYNC - ENVIAR CFOP REFORMA TRIBUTARIA</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUTO E ESTOQUE -->
+    <section id="mapa-produto">
+      <div class="sec-header hdr-envio">Produtos &amp; Estoque — Fluxos 09, 10</div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Fluxo</th><th>Nome</th><th>Rota WTA (BUSCAR)</th><th>URL WTA</th><th>Projeto WTA</th><th>Rota PDVSYNC (ENVIAR)</th><th>Dir.</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>FLUXO-09</td><td>Produto</td><td>WTA - Buscar Produto PDV</td><td><code>/winthor/tributacao/v0/saida/produtotributacao/consultar</code></td><td><span class="proj">winthor-tributacao</span></td><td>PDVSYNC - SALVAR PRODUTO</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-10</td><td>Estoque</td><td>WTA - Buscar Estoque</td><td><code>/api/stock-vtex/v1/available/list</code></td><td><span class="proj">winthor-estoque-vtex</span></td><td>PDVSYNC - ENVIAR ESTOQUE DISPONIVEL</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRECOS -->
+    <section id="mapa-preco">
+      <div class="sec-header hdr-preco">Preços — Fluxos 11, 29, 30, 32, 33</div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Fluxo</th><th>Nome</th><th>Rota WTA (BUSCAR)</th><th>URL WTA</th><th>Projeto WTA</th><th>Rota PDVSYNC (ENVIAR)</th><th>Dir.</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>FLUXO-11</td><td>Preco</td><td>WTA - Buscar Preco Produto</td><td><code>/api/wholesale/v1/price/discount-policy</code></td><td><span class="proj">winthor-pedido-venda</span></td><td>PDVSYNC - ENVIAR PRECO PRODUTO</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-29</td><td>Preco Regiao</td><td>WTA - Buscar Preco Regiao</td><td><code>/winthor/precos/v1/precos-regioes</code></td><td><span class="proj">winthor-integracao-precos</span></td><td>PDVSYNC - ENVIAR PRECO REGIAO</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-30</td><td>Preco Embalagem</td><td>WTA - Buscar Preco Embalagem</td><td><code>/winthor/precos/v1/precos-embalagens</code></td><td><span class="proj">winthor-integracao-precos</span></td><td>PDVSYNC - ENVIAR PRECO EMBALAGEM</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-32</td><td>Preco Fixo</td><td>WTA - Buscar Preco Fixo</td><td><code>/winthor/precos/v1/precos-fixos</code></td><td><span class="proj">winthor-integracao-precos</span></td><td>PDVSYNC - ENVIAR PRECO FIXO</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-33</td><td>Politica Desconto e Acrescimo</td><td>WTA - Buscar Desconto e Acrescimo</td><td><code>/winthor/precos/v1/politica-desconto</code></td><td><span class="proj">winthor-integracao-precos</span></td><td>PDVSYNC - ENVIAR DESCONTO E ACRESCIMO</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FORMAS DE PAGAMENTO -->
+    <section id="mapa-pgto">
+      <div class="sec-header hdr-pgto">Formas de Pagamento — Fluxos 12, 13, 14, 21</div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Fluxo</th><th>Nome</th><th>Rota WTA (BUSCAR)</th><th>URL WTA</th><th>Projeto WTA</th><th>Rota PDVSYNC (ENVIAR)</th><th>Dir.</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>FLUXO-12</td><td>Operadora Cartao</td><td>WTA - Buscar Operadora PDV</td><td><code>/winthor/venda/v0/operadoras</code></td><td><span class="proj">winthor-venda</span></td><td>PDVSYNC - SALVAR OPERADORA</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-13</td><td>Planos de Pagamento</td><td>WTA - Buscar planos de pgto</td><td><code>/winthor/venda/v0/planos-pagamentos</code></td><td><span class="proj">winthor-venda</span></td><td>PDVSYNC - ENVIAR PLANOS DE PGTO</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-14</td><td>Cobrancas Forma Pgto</td><td>WTA - Buscar Tipos Cobrancas</td><td>—</td><td>—</td><td>PDVSYNC - ENVIAR FORMAS DE PGTO</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-21</td><td>Pagamento Dados Complementares</td><td>WTA - DADOS PAGAMENTO</td><td><em>N/A</em></td><td><em>N/A</em></td><td>PDVSYNC - DADOS PAGAMENTO</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENTES E CADASTROS -->
+    <section id="mapa-cad">
+      <div class="sec-header hdr-cad">Clientes &amp; Cadastros — Fluxos 17, 26, 27, 28, 31</div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Fluxo</th><th>Nome</th><th>Rota WTA (BUSCAR)</th><th>URL WTA</th><th>Projeto WTA</th><th>Rota PDVSYNC (ENVIAR)</th><th>Dir.</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>FLUXO-17</td><td>Clientes</td><td>WTA - Buscar Clientes</td><td><code>/api/wholesale/v1/customer/list</code></td><td><span class="proj">winthor-pedido-venda</span></td><td>PDVSYNC - SALVAR CLIENTES</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-26</td><td>Profissional</td><td>WTA - Buscar Profissionais</td><td><code>/winthor/cadastros/v1/profissional</code></td><td><span class="proj">winthor-integracao-cadastros</span></td><td>PDVSYNC - SALVAR PROFISSIONAL</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-27</td><td>Regiao</td><td>WTA - Buscar Regiao PDV</td><td><code>/winthor/cliente/v1/regiao</code></td><td><span class="proj">winthor-integracao-cliente</span></td><td>PDVSYNC - SALVAR REGIAO</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-28</td><td>Ramo Atividade</td><td>WTA - Buscar Ramo Atividade</td><td><code>/winthor/cliente/v1/ramoatividade</code></td><td><span class="proj">winthor-integracao-cliente</span></td><td>PDVSYNC - SALVAR RAMO ATIVIDADE</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+              <tr><td>FLUXO-31</td><td>Grupo Campanha Cliente</td><td>WTA - Buscar Grupo Campanha Cliente</td><td><code>/winthor/cliente/v1/grupoCampanha</code></td><td><span class="proj">winthor-integracao-cliente</span></td><td>PDVSYNC - SALVAR GRUPO CAMPANHA CLIENTE</td><td><span class="dir-envio">→ PDVSYNC</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRANSACIONAIS -->
+    <section id="mapa-transac">
+      <div class="sec-header hdr-receb">Transacionais — Recebimento pelo ERP — Fluxos 15, 16, 19, 20, 37</div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Fluxo</th><th>Nome</th><th>Rota PDVSYNC (BUSCAR)</th><th>Rota WTA (ENVIAR)</th><th>URL WTA</th><th>Projeto WTA</th><th>Dir.</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>FLUXO-15</td><td>Movimentacoes Caixa</td><td>PDVSYNC - BUSCAR MOVIMENTACOES CAIXA</td><td>WTA - Enviar movimentacao caixa</td><td><code>/winthor/varejo/v1/movimentacao</code></td><td><span class="proj">winthor-integracao-varejo</span></td><td><span class="dir-receb">→ WTA</span></td></tr>
+              <tr><td>FLUXO-16</td><td>Vendas</td><td>PDVSYNC - BUSCAR VENDAS</td><td>WTA - Enviar venda</td><td><code>/winthor/varejo/v1/movimentacao/venda</code></td><td><span class="proj">winthor-integracao-varejo</span></td><td><span class="dir-receb">→ WTA</span></td></tr>
+              <tr><td>FLUXO-19</td><td>Pedido Recebido</td><td>PDVSYNC - BUSCAR PEDIDOS RECEBIDO</td><td>WTA - ENVIAR PEDIDO RECEBIDO</td><td><code>/winthor/varejo/matcon/v1/orders/pdvsync</code></td><td><span class="proj">winthor-integracao-matcon</span></td><td><span class="dir-receb">→ WTA</span></td></tr>
+              <tr><td>FLUXO-20</td><td>Pedido Cancelado</td><td>PDVSYNC - BUSCAR PEDIDOS CANCELADA</td><td>WTA - ENVIAR PEDIDO CANCELADO</td><td><code>/winthor/varejo/matcon/v1/orders/pdvsync</code></td><td><span class="proj">winthor-integracao-matcon</span></td><td><span class="dir-receb">→ WTA</span></td></tr>
+              <tr><td>FLUXO-37</td><td>Cadastrar Cliente Retaguarda</td><td>PDVSYNC - BUSCAR CLIENTES</td><td>WTA - ENVIAR CLIENTE</td><td>—</td><td>—</td><td><span class="dir-receb">→ WTA</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- MONITOR / STATUS -->
+    <section id="mapa-monitor">
+      <div class="sec-header hdr-monitor">Monitor / Status — Fluxos 18, 23, 24, 25</div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Fluxo</th><th>Nome</th><th>Rotas WTA</th><th>URL WTA</th><th>Projeto WTA</th><th>Dir.</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>FLUXO-18</td><td>Status Pedido</td>
+                <td>WTA - Buscar status pedido</td>
+                <td><code>/api/wholesale/v1/orders/list</code></td>
+                <td><span class="proj">winthor-pedido-venda</span></td>
+                <td><span class="dir-monitor">Monitor</span></td>
+              </tr>
+              <tr>
+                <td>FLUXO-23</td><td>RCA</td>
+                <td>WTA - CONSULTA RCA</td>
+                <td><code>/winthor/varejo/matcon/v1/rca/consulta</code></td>
+                <td><span class="proj">winthor-integracao-matcon</span></td>
+                <td><span class="dir-monitor">Monitor</span></td>
+              </tr>
+              <tr>
+                <td>FLUXO-24</td><td>Atualizar Status Lote Retaguarda</td>
+                <td>WTA - Buscar lote PDV<br>WTA - Atualizar status lote PDV<br>WTA - Finalizar integra status lote PDV</td>
+                <td><code>/winthor/integracao/fulfillment/v1/lote</code></td>
+                <td><span class="proj">winthor-integracao-config</span></td>
+                <td><span class="dir-monitor">Monitor</span></td>
+              </tr>
+              <tr>
+                <td>FLUXO-25</td><td>Atualizar Status Venda Retaguarda</td>
+                <td>WTA - Buscar Venda Monitor<br>WTA - Atualizar status venda monitor</td>
+                <td><code>/winthor/varejo/v1/retorno/venda</code><br><code>/winthor/integracao/fulfillment/v1/integracao</code></td>
+                <td><span class="proj">winthor-integracao-varejo</span><br><span class="proj">winthor-integracao-config</span></td>
+                <td><span class="dir-monitor">Monitor</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- UTILITARIOS -->
+    <section id="mapa-util">
+      <div class="sec-header hdr-util">Utilitários — Fluxo 22</div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Fluxo</th><th>Nome</th><th>Rota WTA</th><th>Projeto WTA</th><th>Dir.</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>FLUXO-22</td><td>Registrar IP</td>
+                <td>WTA - Busca Registrar IP Inquilino</td>
+                <td>—</td>
+                <td><span class="dir-util">Utilitário</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <!-- ======================================= -->
+  <!-- SECTION: AGENDAMENTOS                   -->
+  <!-- ======================================= -->
+  <section id="agendamentos">
+    <h2>7. Agendamentos</h2>
+    <div class="card">
+      <p style="font-size:13px;color:#555;margin-bottom:14px;">
+        Fluxos executados periodicamente pelo motor de agendamento do WSH.
+      </p>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Agendamento</th><th>Fluxo Vinculado</th><th>Intervalo</th><th>Delay Inicial</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>PDVSYNC - CONSULTAR STATUS LOTE</td><td>FLUXO-24 — Atualizar Status Lote Retaguarda</td><td>300s (5 min)</td><td>5s</td></tr>
+            <tr><td>PDVSYNC - MONITOR VENDAS</td><td>FLUXO-25 — Atualizar Status Venda Retaguarda</td><td>300s (5 min)</td><td>5s</td></tr>
+            <tr><td>PDVSYNC - MOVIMENTO CAIXAS</td><td>FLUXO-15 — Movimentacoes Caixa</td><td>300s (5 min)</td><td>5s</td></tr>
+            <tr><td>PDVSYNC - PEDIDO STATUS CANCELADO</td><td>FLUXO-20 — Pedido Cancelado</td><td>300s (5 min)</td><td>5s</td></tr>
+            <tr><td>PDVSYNC - PEDIDO STATUS RECEBIDO</td><td>FLUXO-19 — Pedido Recebido</td><td>300s (5 min)</td><td>5s</td></tr>
+            <tr><td>PDVSYNC - REGISTRAR IP</td><td>FLUXO-22 — Registrar IP</td><td>periódico</td><td>5s</td></tr>
+            <tr><td>PDVSYNC - VENDAS</td><td>FLUXO-16 — Vendas</td><td>300s (5 min)</td><td>5s</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mermaid">
+gantt
+    title Ciclos de Agendamento (a cada 5 minutos)
+    dateFormat  mm:ss
+    axisFormat  %M:%S
+
+    section Vendas
+    FLUXO-16 Vendas        :active, 00:05, 300s
+    section Caixa
+    FLUXO-15 Mov. Caixa    :active, 00:05, 300s
+    section Pedidos
+    FLUXO-19 Ped. Recebido :active, 00:05, 300s
+    FLUXO-20 Ped. Cancelado:active, 00:05, 300s
+    section Monitor
+    FLUXO-24 Status Lote   :active, 00:05, 300s
+    FLUXO-25 Status Venda  :active, 00:05, 300s
+    section Outros
+    FLUXO-22 Registrar IP  :active, 00:05, 60s
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================= -->
+  <!-- SECTION: PROJETOS WTA                   -->
+  <!-- ======================================= -->
+  <section id="projetos">
+    <h2>8. Projetos WTA por Domínio</h2>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Projeto WTA</th><th>Domínio</th><th>Fluxos Relacionados</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="proj">winthor-filiais</span></td><td>Filiais e Compartilhamentos</td><td>02, 03</td></tr>
+            <tr><td><span class="proj">winthor-estoque-vtex</span></td><td>Estoque</td><td>10</td></tr>
+            <tr><td><span class="proj">winthor-pedido-venda</span></td><td>Pedidos de Venda, Clientes, Preços</td><td>11, 17, 18</td></tr>
+            <tr><td><span class="proj">winthor-tributacao</span></td><td>Tributação (NCM, ICMS, PIS/COFINS, Reforma)</td><td>05, 06, 07, 09, 34, 35, 36, 38</td></tr>
+            <tr><td><span class="proj">winthor-integracao-precos</span></td><td>Políticas de Preços</td><td>29, 30, 32, 33</td></tr>
+            <tr><td><span class="proj">winthor-integracao-varejo</span></td><td>Varejo — Vendas, Caixa, Crédito</td><td>15, 16, 25</td></tr>
+            <tr><td><span class="proj">winthor-integracao-matcon</span></td><td>Pedidos MatCon, RCA</td><td>19, 20, 23</td></tr>
+            <tr><td><span class="proj">winthor-integracao-config</span></td><td>Controle de Lotes e Status</td><td>24, 25</td></tr>
+            <tr><td><span class="proj">winthor-integracao-cliente</span></td><td>Cadastros de Cliente</td><td>27, 28, 31</td></tr>
+            <tr><td><span class="proj">winthor-integracao-cadastros</span></td><td>Cadastros Gerais (Profissional)</td><td>26</td></tr>
+            <tr><td><span class="proj">winthor-ferramenta-usuario</span></td><td>Usuários e Operadores</td><td>08</td></tr>
+            <tr><td><span class="proj">winthor-venda</span></td><td>Operadoras e Planos de Pagamento</td><td>12, 13</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <p style="font-size:11px;color:#999;margin-top:32px;padding-top:16px;border-top:1px solid var(--border);">
+    Referência: <a href="https://github.com/totvs/winthor-smart-hub-layouts/tree/main/pdvsync/rotas" style="color:var(--envio)">GitHub — winthor-smart-hub-layouts / pdvsync / rotas (master)</a>
+    &nbsp;|&nbsp; Documentação: <a href="WORKFLOW_PDVSYNC.md" style="color:var(--envio)">WORKFLOW_PDVSYNC.md</a>
+  </p>
+
+</main>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    sequence: { useMaxWidth: true, diagramMarginX: 20, diagramMarginY: 10, actorMargin: 80 },
+    flowchart: { useMaxWidth: true, htmlLabels: true },
+    gantt: { useMaxWidth: true }
+  });
+
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('#sidebar nav a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 80) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+
+</body>
+</html>

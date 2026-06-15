@@ -1,0 +1,86 @@
+Aqui está a lista limpa, contendo apenas o título e o link completo gerado a partir do seu código HTML:
+
+* **9826 - Checklist de Cadastros**
+[https://tdn.totvs.com/display/DGP/9826+-+Checklist+de+Cadastros](https://www.google.com/search?q=https://tdn.totvs.com/display/DGP/9826%2B-%2BChecklist%2Bde%2BCadastros)
+* **APIs Integrações - Atualizar status lote PDV  - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=845773465](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D845773465)
+* **APIs Integrações - Buscar lote PDV  - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846869411](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846869411)
+* **APIs Integrações - Cancelar pedido PDVSync - INTERNA**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=845773471](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D845773471)
+* **APIs Integrações - Cliente PDVSync - INTERNA**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=1045375868](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D1045375868)
+* **APIs Integrações - Cobranças e Planos de Pagamento**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=886637300](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D886637300)
+* **APIs Integrações - Consulta online de Limite de Crédito do Cliente detalhada PDVSync - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=916882165](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D916882165)
+* **APIs Integrações - Consulta online de Limite de Crédito do Cliente simplificado PDVSync - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=917120871](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D917120871)
+* **APIs Integrações - Crédito do Cliente - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846868578](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846868578)
+* **APIs Integrações - Estoque Disponível - PDVSync (ONLINE)**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846869235](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846869235)
+* **APIs Integrações - Finalizar integra status lote PDV  - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=832641932](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D832641932)
+* **APIs Integrações - Grupo de Campanha- EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=863300975](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D863300975)
+* **APIs Integrações Lexos (Venda MarketPlace)**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846869193](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846869193)
+* **APIs Integrações - Operadora Cartão TEF (EM HOMOLOGAÇÃO)**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870008](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870008)
+* **APIs Integrações - PDV/Caixa PDVSync - INTERNA**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870221](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870221)
+* **APIs Integrações - PDV Venda/Inutilização/Cancelamento Varejo - HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=708104392](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D708104392)
+* **APIs Integrações - Pedido PDVSync - INTERNA**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870073](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870073)
+* **APIs Integrações - Pedido PDVSync - RESGATADA ou FATURADO PARCILAMENTE - INTERNA**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=980987813](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D980987813)
+* **APIs Integrações - Pedido PDVSync - situacaoPreVenda = RECEBIDO - INTERNA**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=754949419](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D754949419)
+* **APIs Integrações - Pedido PDVSync TV1 geração e faturamento - INTERNA**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=927552369](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D927552369)
+* **APIs Integrações - Pedido - Reservar estoque PDVSync - INTERNA**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870096](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870096)
+* **APIs Integrações - Pesquisa de Pedido PDVSync - INTERNA**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=1035870391](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D1035870391)
+* **APIs Integrações - Preço com politica de desconto 561 e preço fixo 357 (/discount-policy) - HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870113](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870113)
+* **APIs Integrações - Preço do Produto por Embalagem - EM HOMOLOGACAO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=874185389](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D874185389)
+* **APIs Integrações - Preço do Produto por Região - EM HOMOLOGACAO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=872690099](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D872690099)
+* **APIs Integrações - Preço Fixo - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=881561379](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D881561379)
+* **APIs Integrações - Produto/Tributação - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870130](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870130)
+* **APIs Integrações - Profissional - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=868753358](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D868753358)
+* **APIs Integrações - Ramos de Atividade - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=863900359](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D863900359)
+* **APIs Integrações - RCA**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=825326511](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D825326511)
+* **APIs Integrações - Rede de Cliente - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=863305294](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D863305294)
+* **APIs Integrações - Região - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=862608320](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D862608320)
+* **APIs Integrações - Tipos de Cobranças - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870148](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870148)
+* **APIs Integrações - Tipos de Cobranças - PDVSYNC - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=1012518476](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D1012518476)
+* **APIs Integrações - Tributação - CBS / IBS / IS**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=954073383](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D954073383)
+* **APIs Integrações - Tributação ICMS/Substituição tributária/FCP (NOVA - EM AVALIACAO)**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=990757758](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D990757758)
+* **APIs Integrações - Tributação ICMS/Substituição tributária/FCP - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870160](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870160)
+* **APIs Integrações - Tributação NCM - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870166](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870166)
+* **APIs Integrações - Tributação PIS COFINS - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870169](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870169)
+* **APIs Integrações - Tributação por Exceção de Produto, CFOP e NCM - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=961007191](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D961007191)
+* **APIs Integrações - Usuário/operador - EM HOMOLOGAÇÃO**
+[https://tdn.totvs.com/pages/viewpage.action?pageId=846870176](https://www.google.com/search?q=https://tdn.totvs.com/pages/viewpage.action%3FpageId%3D846870176)
+* **Apoio para digitar pedidos**
+[https://tdn.totvs.com/display/DGP/Apoio+para+digitar+pedidos](https://www.google.com/search?q=https://tdn.totvs.com/display/DGP/Apoio%2Bpara%2Bdigitar%2Bpedidos)
