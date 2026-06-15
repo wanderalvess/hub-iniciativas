@@ -5,6 +5,34 @@ import { History, Tag, Rocket, Paintbrush, ShieldAlert, CheckCircle } from 'luci
 const Versions = () => {
   const versionsData = [
     {
+      version: '1.2.0',
+      date: '15 de Junho de 2026',
+      title: 'Secret Vault & Módulo de Governança',
+      description: 'Implementação de cofre com criptografia E2EE AES-GCM no cliente e portal de segurança/conformidade.',
+      features: [
+        {
+          category: 'Cofre Confidencial (Secret Vault)',
+          icon: Rocket,
+          color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+          items: [
+            'Desenvolvimento do Secret Vault (/devtools/secret-vault) com criptografia local Web Crypto API AES-GCM 256 bits.',
+            'Links seguros de autodestruição que deletam payloads confidenciais do Firestore imediatamente após a leitura.',
+            'Interface adaptada para alinhamento e proporções perfeitas dos botões em português tanto em tema claro quanto escuro.'
+          ]
+        },
+        {
+          category: 'Portal de Governança & Segurança',
+          icon: Paintbrush,
+          color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+          items: [
+            'Módulo de Governança (/governance) detalhando pilares de autenticação, LGPD, isolamento por time e inventário de dados.',
+            'Integração dos novos atalhos de suporte e conformidade no menu dropdown principal.',
+            'Correções de cores contrastantes nas validações de links e inputs no Modo Claro.'
+          ]
+        }
+      ]
+    },
+    {
       version: '1.1.0',
       date: '15 de Junho de 2026',
       title: 'Modo Claro & Importador Inteligente',
@@ -17,7 +45,8 @@ const Versions = () => {
           items: [
             'Correção de textos cinza escuro ilegíveis em fundo claro no explorador de rotas, sugestão de melhorias, cronograma de execução, mapeamento de projetos e fluxos.',
             'Cores dos diagramas Mermaid auto-ajustáveis dinamicamente ao alternar o tema do sistema.',
-            'Ajuste nos modais de criação de workflow para exibição correta e rolável em zoom de 100% sem cortes de tela.'
+            'Ajuste nos modais de criação de workflow para exibição correta e rolável em zoom de 100% sem cortes de tela.',
+            'Evolução estética e refinamento da Barra Superior (Header) corporativa com design estilo Glassmorphism, agrupamento em abas, novas fontes de menu e hover responsivo.'
           ]
         },
         {

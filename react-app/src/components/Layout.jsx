@@ -19,7 +19,9 @@ import {
   HelpCircle,
   BookOpen,
   History,
-  ChevronDown
+  ChevronDown,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import UserAvatar from './UserAvatar';
@@ -403,6 +405,37 @@ const Layout = ({ children }) => {
       .light-theme select {
         color: #0f172a !important;
       }
+      
+      /* Secret Vault & Page UI Overrides */
+      .light-theme .bg-slate-950\\/50 {
+        background-color: rgba(241, 245, 249, 0.9) !important;
+      }
+      .light-theme .border-slate-850 {
+        border-color: #cbd5e1 !important;
+      }
+      .light-theme .text-slate-400 {
+        color: #475569 !important;
+      }
+      .light-theme .bg-slate-950\\/60 {
+        background-color: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+      }
+      .light-theme .bg-slate-950\\/80 {
+        background-color: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+      }
+      .light-theme .text-slate-300 {
+        color: #334155 !important;
+      }
+      .light-theme .bg-rose-500\\/5 {
+        background-color: #fff1f2 !important;
+        border-color: #fecdd3 !important;
+      }
+      .light-theme .text-rose-300 {
+        color: #be123c !important;
+      }
     `;
   }, [user?.themePrimary, user?.themeSecondary]);
 
@@ -414,6 +447,8 @@ const Layout = ({ children }) => {
     { label: 'Workflows de APIs', path: '/workflows', icon: GitBranch },
     { label: 'AI Skills & Prompts', path: '/skills', icon: Cpu },
     { label: 'Base de Conhecimento', path: '/knowledge', icon: BookOpen },
+    { label: 'Secret Vault', path: '/devtools/secret-vault', icon: Lock },
+    { label: 'Governança', path: '/governance', icon: ShieldCheck },
     { label: 'Notas de Versão', path: '/versions', icon: History },
     { label: 'Ajuda & Suporte', path: '/help', icon: HelpCircle },
   ];
@@ -441,17 +476,17 @@ const Layout = ({ children }) => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_100px_100px,#312e81,transparent)] opacity-10 pointer-events-none"></div>
 
       {/* TOOLBAR SUPERIOR CORPORATIVA */}
-      <header className="h-16 bg-slate-900/60 backdrop-blur-md border-b border-slate-800/80 px-6 flex items-center justify-between sticky top-0 z-40">
+      <header className="h-16 bg-slate-900/40 backdrop-blur-xl border-b border-slate-800/60 px-6 flex items-center justify-between sticky top-0 z-40 shadow-[0_4px_30px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.2)]">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 transition-all text-slate-400 hover:text-white"
+            className="lg:hidden p-2 rounded-xl bg-slate-800/40 border border-slate-700/40 hover:bg-slate-700/60 transition-all text-slate-400 hover:text-white"
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
           
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(99,102,241,0.5)] select-none flex items-center justify-center bg-slate-950 border border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(99,102,241,0.45)] select-none flex items-center justify-center bg-slate-950 border border-slate-800/80 hover:scale-105 transition-transform duration-300 shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-full h-full">
                 <defs>
                   <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -470,7 +505,7 @@ const Layout = ({ children }) => {
                 <circle cx="16" cy="16" r="2" fill="#ffffff" />
               </svg>
             </div>
-            <span className="font-extrabold tracking-tight text-white text-lg bg-gradient-to-r from-white via-indigo-100 to-slate-400 bg-clip-text text-transparent">
+            <span className="font-black tracking-tight text-lg bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent hover:brightness-110 transition-all">
               Hub de Iniciativas
             </span>
           </div>
@@ -489,7 +524,7 @@ const Layout = ({ children }) => {
                     console.error("Erro ao alternar time ativo:", err);
                   }
                 }}
-                className="bg-slate-800/80 border border-slate-700/80 text-slate-300 text-[10px] font-bold rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer uppercase"
+                className="bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white text-[10px] font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer uppercase transition-all"
               >
                 {user.associatedTeams.map((tId) => (
                   <option key={tId} value={tId} className="bg-slate-900 text-slate-300">
@@ -502,7 +537,7 @@ const Layout = ({ children }) => {
         </div>
 
         {/* NAV PRINCIPAL HORIZONTAL (DESKTOP) */}
-        <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+        <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 bg-slate-950/40 p-1 rounded-xl border border-slate-850/30">
           {mainMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -510,13 +545,13 @@ const Layout = ({ children }) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border ${
                   isActive 
-                    ? 'bg-indigo-600/10 border-indigo-500/30 text-white shadow-glow-indigo' 
+                    ? 'bg-indigo-600/10 border-indigo-500/35 text-white shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                 }`}
               >
-                <Icon className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                <Icon className={`h-3.5 w-3.5 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-indigo-400' : 'text-slate-400'}`} />
                 <span>{item.label}</span>
               </Link>
             );
@@ -526,15 +561,15 @@ const Layout = ({ children }) => {
           <div className="relative">
             <button
               onClick={() => setSupportDropdownOpen(!supportDropdownOpen)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border outline-none ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border outline-none ${
                 isSupportActive 
-                  ? 'bg-indigo-600/10 border-indigo-500/30 text-white shadow-glow-indigo' 
+                  ? 'bg-indigo-600/10 border-indigo-500/35 text-white shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
                   : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
               }`}
             >
               <HelpCircle className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
               <span>Suporte</span>
-              <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${supportDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform duration-300 ${supportDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             <AnimatePresence>
@@ -555,7 +590,7 @@ const Layout = ({ children }) => {
                           key={item.path}
                           to={item.path}
                           onClick={() => setSupportDropdownOpen(false)}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all ${
+                          className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold transition-all ${
                             isActive
                               ? 'bg-indigo-600/20 text-white border-l-2 border-indigo-500'
                               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -577,15 +612,15 @@ const Layout = ({ children }) => {
           {/* Alternador de Tema Claro/Escuro */}
           <button
             onClick={toggleThemeMode}
-            className="p-2.5 rounded-xl bg-slate-800/30 border border-slate-800 hover:border-slate-700/60 transition-all text-slate-400 hover:text-white flex items-center justify-center"
+            className="p-2 rounded-xl bg-slate-850/20 border border-slate-800/80 hover:border-slate-750 hover:bg-slate-800/50 transition-all text-slate-400 hover:text-white flex items-center justify-center shadow-sm"
             title={themeMode === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
           >
             {themeMode === 'dark' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-indigo-400">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m0 13.5V21M9.75 12a2.25 2.25 0 1 1 4.5 0M4.912 4.912l1.59 1.59m11.2 11.2 1.59 1.59M3 12h2.25m13.5 0H21M5.92 18.08l1.59-1.59M18.08 5.92l-1.59 1.59" />
               </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-amber-500">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
               </svg>
             )}
@@ -596,7 +631,7 @@ const Layout = ({ children }) => {
             <div className="relative">
             <button 
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-              className="flex items-center gap-2 p-1 pr-3 rounded-full bg-slate-800/30 border border-slate-800 hover:border-slate-700/60 transition-all outline-none"
+              className="flex items-center gap-2 p-1.5 pr-3.5 rounded-full bg-slate-850/20 border border-slate-800/85 hover:border-indigo-500/50 hover:bg-slate-800/40 transition-all outline-none"
             >
               <UserAvatar photoURL={user.photoURL} displayName={user.displayName} sizeClass="h-8 w-8" textClass="text-[9px] font-extrabold" />
               <span className="hidden sm:inline text-xs font-semibold text-slate-300 max-w-[120px] truncate">

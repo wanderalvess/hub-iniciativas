@@ -14,6 +14,9 @@ import Help from './pages/Help';
 import Knowledge from './pages/Knowledge';
 import Versions from './pages/Versions';
 import Team from './pages/Team';
+import SecretVault from './pages/SecretVault';
+import VaultReader from './pages/VaultReader';
+import Governance from './pages/Governance';
 import { ToastProvider } from './context/ToastContext';
 
 
@@ -133,6 +136,36 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Team />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/devtools/secret-vault" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SecretVault />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/vault/:id" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <VaultReader />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/governance" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Governance />
                 </Layout>
               </ProtectedRoute>
             } 
