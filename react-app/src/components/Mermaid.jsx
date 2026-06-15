@@ -4,6 +4,24 @@ const Mermaid = ({ chart }) => {
   const ref = useRef(null);
   const [svg, setSvg] = useState('');
   const [error, setError] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState('dark');
+
+  useEffect(() => {
+    const checkTheme = () => {
+      const isLight = document.querySelector('.light-theme') !== null;
+      setCurrentTheme(isLight ? 'light' : 'dark');
+    };
+    
+    checkTheme();
+
+    const observer = new MutationObserver(() => {
+      checkTheme();
+    });
+
+    observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -16,12 +34,35 @@ const Mermaid = ({ chart }) => {
 
       try {
         setError(false);
-        // Inicializa o Mermaid com configurações de tema escuro e de visualização
+        const isLight = currentTheme === 'light';
+
+        // Inicializa o Mermaid com configurações dependentes do tema atual
         window.mermaid.initialize({
           startOnLoad: false,
-          theme: 'dark',
+          theme: isLight ? 'default' : 'dark',
           securityLevel: 'loose',
-          themeVariables: {
+          themeVariables: isLight ? {
+            background: '#ffffff',
+            primaryColor: '#f1f5f9', // slate-100
+            primaryBorderColor: '#6366f1', // indigo-500
+            primaryTextColor: '#0f172a', // slate-900
+            lineColor: '#64748b', // slate-500
+            secondaryColor: '#f8fafc', // slate-50
+            tertiaryColor: '#ffffff',
+            actorBkg: '#f1f5f9',
+            actorBorder: '#6366f1',
+            actorTextColor: '#0f172a',
+            actorLineColor: '#64748b',
+            signalColor: '#0f172a',
+            signalTextColor: '#0f172a',
+            labelBoxBkgColor: '#f1f5f9',
+            labelBoxBorderColor: '#6366f1',
+            labelTextColor: '#0f172a',
+            loopTextColor: '#0f172a',
+            noteBkgColor: '#fef08a', // yellow-200
+            noteBorderColor: '#eab308', // yellow-500
+            noteTextColor: '#854d0e', // yellow-800
+          } : {
             background: '#0f172a', // slate-900
             primaryColor: '#312e81', // indigo-950
             primaryBorderColor: '#6366f1', // indigo-500
@@ -55,7 +96,7 @@ const Mermaid = ({ chart }) => {
     return () => {
       isMounted = false;
     };
-  }, [chart]);
+  }, [chart, currentTheme]);
 
   if (error) {
     return (

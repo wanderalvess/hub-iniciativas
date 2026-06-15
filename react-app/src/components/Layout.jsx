@@ -35,6 +35,32 @@ const Layout = ({ children }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [supportDropdownOpen, setSupportDropdownOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  const [themeMode, setThemeMode] = useState(() => {
+    return localStorage.getItem('themeMode') || 'dark';
+  });
+
+  useEffect(() => {
+    if (user?.themeMode) {
+      setThemeMode(user.themeMode);
+      localStorage.setItem('themeMode', user.themeMode);
+    }
+  }, [user?.themeMode]);
+
+  const toggleThemeMode = async () => {
+    const nextTheme = themeMode === 'dark' ? 'light' : 'dark';
+    setThemeMode(nextTheme);
+    localStorage.setItem('themeMode', nextTheme);
+    
+    if (user?.uid) {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, { themeMode: nextTheme });
+      } catch (err) {
+        console.error("Erro ao salvar tema do usuário:", err);
+      }
+    }
+  };
 
   useEffect(() => {
     const primary = user?.themePrimary || '#6366f1';
@@ -93,6 +119,290 @@ const Layout = ({ children }) => {
       .to-purple-600 {
         --tw-gradient-to: ${secondary} !important;
       }
+
+      /* Light Theme Overrides */
+      .light-theme {
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+      }
+      .light-theme input,
+      .light-theme select,
+      .light-theme textarea {
+        color: #0f172a;
+      }
+      .light-theme .bg-slate-950 {
+        background-color: #f1f5f9 !important;
+      }
+      .light-theme .bg-slate-900 {
+        background-color: #ffffff !important;
+      }
+      .light-theme .bg-slate-900\\/60,
+      .light-theme .bg-slate-950\\/60,
+      .light-theme .bg-slate-950\\/80 {
+        background-color: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(8px);
+      }
+      .light-theme .bg-slate-900\\/30,
+      .light-theme .bg-slate-900\\/40,
+      .light-theme .bg-slate-950\\/20,
+      .light-theme .bg-slate-950\\/40 {
+        background-color: #f1f5f9 !important;
+      }
+      .light-theme .bg-slate-900\\/90,
+      .light-theme .bg-slate-900\\/95 {
+        background-color: #ffffff !important;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1) !important;
+      }
+      .light-theme .bg-slate-950\\/10,
+      .light-theme .bg-slate-900\\/20,
+      .light-theme .bg-slate-900\\/10 {
+        background-color: rgba(0, 0, 0, 0.04) !important;
+      }
+      .light-theme .bg-indigo-950\\/40 {
+        background-color: rgba(99, 102, 241, 0.12) !important;
+      }
+      .light-theme .bg-slate-900\\/60 {
+        background-color: rgba(71, 85, 105, 0.08) !important;
+      }
+      .light-theme .bg-emerald-950\\/40 {
+        background-color: rgba(16, 185, 129, 0.12) !important;
+      }
+      .light-theme .bg-teal-900\\/40 {
+        background-color: rgba(20, 184, 166, 0.12) !important;
+      }
+      .light-theme .bg-amber-950\\/40 {
+        background-color: rgba(245, 158, 11, 0.12) !important;
+      }
+      .light-theme .bg-sky-950\\/40 {
+        background-color: rgba(14, 165, 233, 0.12) !important;
+      }
+      .light-theme .bg-purple-950\\/40 {
+        background-color: rgba(168, 85, 247, 0.12) !important;
+      }
+      .light-theme .bg-rose-950\\/40 {
+        background-color: rgba(244, 63, 94, 0.12) !important;
+      }
+      .light-theme .bg-cyan-950\\/40 {
+        background-color: rgba(6, 182, 212, 0.12) !important;
+      }
+      .light-theme .bg-orange-950\\/40 {
+        background-color: rgba(249, 115, 22, 0.12) !important;
+      }
+      .light-theme .bg-violet-950\\/40 {
+        background-color: rgba(139, 92, 246, 0.12) !important;
+      }
+      .light-theme .bg-gray-900\\/40 {
+        background-color: rgba(100, 116, 139, 0.12) !important;
+      }
+      .light-theme .premium-input {
+        background-color: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+      }
+      .light-theme .premium-input:focus {
+        border-color: ${primary} !important;
+      }
+      .light-theme .text-white,
+      .light-theme .text-slate-50,
+      .light-theme .text-slate-100,
+      .light-theme .text-slate-200,
+      .light-theme .text-slate-300 {
+        color: #0f172a !important;
+      }
+      .light-theme .text-slate-400,
+      .light-theme .text-slate-500 {
+        color: #475569 !important;
+      }
+      .light-theme .text-slate-600,
+      .light-theme .text-slate-700 {
+        color: #64748b !important;
+      }
+      .light-theme .text-indigo-400,
+      .light-theme .text-indigo-500,
+      .light-theme .text-indigo-600 {
+        color: ${primary} !important;
+      }
+      .light-theme .text-emerald-400,
+      .light-theme .text-emerald-500 {
+        color: #059669 !important;
+      }
+      .light-theme .text-emerald-600 {
+        color: #047857 !important;
+      }
+      .light-theme .text-amber-400,
+      .light-theme .text-amber-500 {
+        color: #d97706 !important;
+      }
+      .light-theme .text-rose-400,
+      .light-theme .text-rose-500,
+      .light-theme .text-red-400,
+      .light-theme .text-red-500 {
+        color: #e11d48 !important;
+      }
+      .light-theme .text-sky-400,
+      .light-theme .text-sky-500,
+      .light-theme .text-blue-400,
+      .light-theme .text-blue-500 {
+        color: #0284c7 !important;
+      }
+      .light-theme .text-purple-400,
+      .light-theme .text-purple-500,
+      .light-theme .text-violet-400,
+      .light-theme .text-violet-500 {
+        color: #7c3aed !important;
+      }
+      .light-theme .border-slate-800,
+      .light-theme .border-slate-800\\/80,
+      .light-theme .border-slate-900,
+      .light-theme .border-slate-900\\/40,
+      .light-theme .border-slate-900\\/60,
+      .light-theme .border-slate-900\\/80 {
+        border-color: #cbd5e1 !important;
+      }
+      .light-theme .hover\\:border-slate-800:hover,
+      .light-theme .hover\\:border-slate-700\\/60:hover {
+        border-color: #94a3b8 !important;
+      }
+      .light-theme .bento-card {
+        background-color: rgba(255, 255, 255, 0.8) !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03) !important;
+      }
+      .light-theme .bento-card:hover {
+        border-color: #94a3b8 !important;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04) !important;
+      }
+      .light-theme .bg-slate-950\\/80 {
+        background-color: rgba(255, 255, 255, 0.9) !important;
+      }
+      .light-theme .bg-slate-950\\/95 {
+        background-color: rgba(255, 255, 255, 0.98) !important;
+      }
+      .light-theme aside {
+        background-color: #ffffff !important;
+        border-color: #cbd5e1 !important;
+      }
+      .light-theme .text-slate-400:hover,
+      .light-theme .text-slate-500:hover {
+        color: #0f172a !important;
+      }
+      .light-theme .hover\\:text-slate-200:hover {
+        color: #0f172a !important;
+      }
+      .light-theme .hover\\:text-slate-300:hover {
+        color: #0f172a !important;
+      }
+      .light-theme .hover\\:bg-slate-800\\/40:hover {
+        background-color: #f1f5f9 !important;
+      }
+      .light-theme .hover\\:bg-slate-800\\/60:hover {
+        background-color: #f1f5f9 !important;
+      }
+      .light-theme .bg-slate-900\\/95 {
+        background-color: #ffffff !important;
+        border-color: #cbd5e1 !important;
+      }
+      .light-theme .bg-slate-800\\/50,
+      .light-theme .bg-slate-800\\/30 {
+        background-color: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+      }
+      .light-theme .bg-slate-800\\/80 {
+        background-color: #ffffff !important;
+        border-color: #cbd5e1 !important;
+      }
+      .light-theme .text-rose-400 {
+        color: #e11d48 !important;
+      }
+      .light-theme .hover\\:bg-rose-500\\/10:hover {
+        background-color: #ffe4e6 !important;
+      }
+      .light-theme .bg-slate-800\\/40 {
+        background-color: #f1f5f9 !important;
+      }
+      .light-theme .divide-slate-900\\/40 > * + * {
+        border-color: #cbd5e1 !important;
+      }
+      .light-theme select option {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+      }
+      
+      /* Navigation Header and sidebar fixes */
+      .light-theme header a,
+      .light-theme header button,
+      .light-theme nav a,
+      .light-theme nav button {
+        color: #334155 !important;
+      }
+      .light-theme header a:hover,
+      .light-theme header button:hover,
+      .light-theme nav a:hover,
+      .light-theme nav button:hover {
+        color: #0f172a !important;
+      }
+      .light-theme a.bg-indigo-600\\/10,
+      .light-theme button.bg-indigo-600\\/10 {
+        color: ${primary} !important;
+      }
+      .light-theme a.bg-indigo-600,
+      .light-theme button.bg-indigo-600,
+      .light-theme .bg-indigo-600,
+      .light-theme .bg-indigo-600 span,
+      .light-theme .bg-indigo-600 div,
+      .light-theme .bg-indigo-600 p,
+      .light-theme .bg-indigo-600 a,
+      .light-theme .btn-primary,
+      .light-theme .btn-primary * {
+        color: #ffffff !important;
+      }
+      .light-theme .bg-slate-800 {
+        background-color: #e2e8f0 !important;
+        border-color: #cbd5e1 !important;
+      }
+
+      /* Badges in light mode for workflows list */
+      .light-theme .bg-emerald-500\\/10 {
+        background-color: rgba(16, 185, 129, 0.15) !important;
+        color: #047857 !important;
+        border-color: rgba(16, 185, 129, 0.3) !important;
+      }
+      .light-theme .bg-indigo-500\\/10 {
+        background-color: rgba(99, 102, 241, 0.15) !important;
+        color: #4338ca !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+      }
+      .light-theme .bg-amber-500\\/10 {
+        background-color: rgba(245, 158, 11, 0.15) !important;
+        color: #b45309 !important;
+        border-color: rgba(245, 158, 11, 0.3) !important;
+      }
+      .light-theme .bg-rose-500\\/10 {
+        background-color: rgba(244, 63, 94, 0.15) !important;
+        color: #be123c !important;
+        border-color: rgba(244, 63, 94, 0.3) !important;
+        color: #be123c !important;
+      }
+      .light-theme .bg-purple-500\\/10 {
+        background-color: rgba(168, 85, 247, 0.15) !important;
+        color: #7e22ce !important;
+        border-color: rgba(168, 85, 247, 0.3) !important;
+      }
+      .light-theme .bg-sky-500\\/10 {
+        background-color: rgba(14, 165, 233, 0.15) !important;
+        color: #0369a1 !important;
+        border-color: rgba(14, 165, 233, 0.3) !important;
+      }
+      
+      .light-theme .text-indigo-200 {
+        color: ${primary} !important;
+      }
+      .light-theme .bg-indigo-600\\/10 {
+        background-color: ${primary}15 !important;
+      }
+      .light-theme select {
+        color: #0f172a !important;
+      }
     `;
   }, [user?.themePrimary, user?.themeSecondary]);
 
@@ -125,7 +435,7 @@ const Layout = ({ children }) => {
   const isSupportActive = supportMenuItems.some(item => location.pathname === item.path);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative overflow-hidden">
+    <div className={`min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative overflow-hidden ${themeMode === 'light' ? 'light-theme' : ''}`}>
       
       {/* Background radial glow effect */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_100px_100px,#312e81,transparent)] opacity-10 pointer-events-none"></div>
@@ -263,9 +573,27 @@ const Layout = ({ children }) => {
           </div>
         </nav>
 
-        {/* Perfil do Usuário com Dropdown */}
-        {user && (
-          <div className="relative">
+        <div className="flex items-center gap-3">
+          {/* Alternador de Tema Claro/Escuro */}
+          <button
+            onClick={toggleThemeMode}
+            className="p-2.5 rounded-xl bg-slate-800/30 border border-slate-800 hover:border-slate-700/60 transition-all text-slate-400 hover:text-white flex items-center justify-center"
+            title={themeMode === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
+          >
+            {themeMode === 'dark' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m0 13.5V21M9.75 12a2.25 2.25 0 1 1 4.5 0M4.912 4.912l1.59 1.59m11.2 11.2 1.59 1.59M3 12h2.25m13.5 0H21M5.92 18.08l1.59-1.59M18.08 5.92l-1.59 1.59" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+              </svg>
+            )}
+          </button>
+
+          {/* Perfil do Usuário com Dropdown */}
+          {user && (
+            <div className="relative">
             <button 
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               className="flex items-center gap-2 p-1 pr-3 rounded-full bg-slate-800/30 border border-slate-800 hover:border-slate-700/60 transition-all outline-none"
@@ -315,6 +643,7 @@ const Layout = ({ children }) => {
             </AnimatePresence>
           </div>
         )}
+        </div>
       </header>      {/* LAYOUT PRINCIPAL */}
       <div className="flex flex-1 relative">
 

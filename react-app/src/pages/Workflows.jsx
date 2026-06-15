@@ -7,7 +7,9 @@ import {
   addWorkflowRoutesBatch,
   updateWorkflow,
   deleteWorkflow,
-  addWorkflowRoute
+  addWorkflowRoute,
+  updateWorkflowRoute,
+  deleteWorkflowRoute
 } from '../services/firestore';
 import BentoCard from '../components/BentoCard';
 import Mermaid from '../components/Mermaid';
@@ -34,10 +36,251 @@ import {
   Pencil,
   Trash2,
   X,
-  CloudDownload
+  CloudDownload,
+  Copy,
+  Check,
+  ExternalLink,
+  Edit3,
+  Cpu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../context/ToastContext';
+
+const getMockData = (route) => {
+  if (!route) return { input: {}, spec: [], output: {} };
+  const fluxo = (route.fluxo || '').toUpperCase();
+  const nome = (route.nome || '').toLowerCase();
+  
+  if (fluxo.includes('16') || fluxo.includes('15') || fluxo.includes('19') || fluxo.includes('20') || nome.includes('venda') || nome.includes('pedido') || nome.includes('caixa')) {
+    return {
+      input: {
+        "pedidoId": "PED-12345",
+        "filial": "01",
+        "cliente": {
+          "codigo": 9998,
+          "nome": "Wanderson Alves"
+        },
+        "itens": [
+          { "produto": "Teclado Mecanico", "qtd": 1, "preco": 350.00 }
+        ],
+        "status": "FATURADO"
+      },
+      spec: [
+        {
+          "operation": "shift",
+          "spec": {
+            "pedidoId": "order_number",
+            "filial": "store_branch",
+            "cliente": { "nome": "customer_name" },
+            "status": "order_status"
+          }
+        }
+      ],
+      output: {
+        "order_number": "PED-12345",
+        "store_branch": "01",
+        "customer_name": "Wanderson Alves",
+        "order_status": "FATURADO"
+      }
+    };
+  }
+
+  if (fluxo.includes('10') || nome.includes('estoque') || nome.includes('saldo')) {
+    return {
+      input: {
+        "codigoBarras": "7891234567890",
+        "quantidade": 150.0,
+        "filial": "01",
+        "bloqueado": false
+      },
+      spec: [
+        {
+          "operation": "shift",
+          "spec": {
+            "codigoBarras": "barcode",
+            "quantidade": "quantity",
+            "filial": "branch_id"
+          }
+        }
+      ],
+      output: {
+        "barcode": "7891234567890",
+        "quantity": 150.0,
+        "branch_id": "01"
+      }
+    };
+  }
+
+  if (fluxo.includes('9') || nome.includes('produto') || nome.includes('item')) {
+    return {
+      input: {
+        "codigoProd": 4589,
+        "descricao": "Mouse Neon RGB Gamer",
+        "precoCusto": 45.90,
+        "ncm": "84716053",
+        "status": "A"
+      },
+      spec: [
+        {
+          "operation": "shift",
+          "spec": {
+            "codigoProd": "id",
+            "descricao": "name",
+            "status": "active"
+          }
+        }
+      ],
+      output: {
+        "id": 4589,
+        "name": "Mouse Neon RGB Gamer",
+        "active": true
+      }
+    };
+  }
+
+  if (fluxo.includes('27') || fluxo.includes('28') || fluxo.includes('31') || nome.includes('cliente') || nome.includes('cadastro')) {
+    return {
+      input: {
+        "cpfCnpj": "12345678901",
+        "razaoSocial": "Wanderson Alves de Souza",
+        "email": "wanderson@exemplo.com",
+        "situacao": "ATIVO"
+      },
+      spec: [
+        {
+          "operation": "shift",
+          "spec": {
+            "cpfCnpj": "tax_id",
+            "razaoSocial": "full_name",
+            "situacao": "status"
+          }
+        }
+      ],
+      output: {
+        "tax_id": "12345678901",
+        "full_name": "Wanderson Alves de Souza",
+        "status": "ACTIVE"
+      }
+    };
+  }
+
+  return {
+    input: {
+      "id": "GEN-01",
+      "timestamp": new Date().toISOString().split('T')[0],
+      "route": route.urlWta || route.nome,
+      "payload": {
+        "active": true
+      }
+    },
+    spec: [
+      {
+        "operation": "default",
+        "spec": {
+          "processedBy": "WSH-Core"
+        }
+      }
+    ],
+    output: {
+      "id": "GEN-01",
+      "timestamp": new Date().toISOString().split('T')[0],
+      "route": route.urlWta || route.nome,
+      "payload": {
+        "active": true
+      },
+      "processedBy": "WSH-Core"
+    }
+  };
+};
+
+const parseSystemFlow = (flowStr, fallbackMaster, fallbackDestiny) => {
+  if (!flowStr || !flowStr.trim()) {
+    return [
+      { name: fallbackMaster || 'Origem', type: 'system' },
+      { name: 'connector', direction: '->' },
+      { name: 'WSH Core', type: 'engine' },
+      { name: 'connector', direction: '->' },
+      { name: fallbackDestiny || 'Destino', type: 'system' }
+    ];
+  }
+  
+  const tokens = flowStr.split(/(<->|->|<-)/g).map(t => t.trim());
+  const nodes = [];
+  for (let i = 0; i < tokens.length; i++) {
+    if (i % 2 === 0) {
+      const name = tokens[i];
+      if (!name) continue;
+      nodes.push({
+        name,
+        type: name.toLowerCase().includes('core') || name.toLowerCase().includes('hub') || name.toLowerCase().includes('wsh') ? 'engine' : 'system'
+      });
+    } else {
+      nodes.push({
+        name: 'connector',
+        type: 'connector',
+        direction: tokens[i]
+      });
+    }
+  }
+  return nodes;
+};
+
+const inferMetadataFromMarkdown = (markdown) => {
+  if (!markdown || !markdown.trim()) return null;
+  
+  const lines = markdown.split('\n');
+  let name = '';
+  let origin = '';
+  let destiny = '';
+  let integrators = '';
+  let systemFlow = '';
+
+  // 1. Infer Name from H1 heading
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('# ')) {
+      let rawName = trimmed.substring(2).trim();
+      const separatorIdx = rawName.search(/—|–|-|:/);
+      if (separatorIdx !== -1) {
+        rawName = rawName.substring(0, separatorIdx).trim();
+      }
+      name = rawName;
+      break;
+    }
+  }
+
+  // 2. Infer Integrator from labels/text
+  const serviceRegex = /(?:serviço|service|servico|wsh)\s*(?:wsh|integrador)?\s*:\s*\**`?([a-zA-Z0-9_\-]+)`?\**/i;
+  for (const line of lines) {
+    const match = line.match(serviceRegex);
+    if (match && match[1]) {
+      integrators = match[1].trim();
+      break;
+    }
+  }
+  if (!integrators && markdown.includes('winthor-integracao-core')) {
+    integrators = 'winthor-integracao-core';
+  }
+
+  // 3. Heuristic Origin and Destiny
+  const lowerText = markdown.toLowerCase();
+  if (lowerText.includes('winthor') || lowerText.includes('wta') || lowerText.includes('oracle')) {
+    origin = 'ERP Winthor';
+  }
+  
+  if (lowerText.includes('pdvsync') && lowerText.includes('pdvomni')) {
+    destiny = 'PDVSync / Omni';
+    systemFlow = 'ERP Winthor <-> WSH Core <-> PDVSync -> PDVOmni';
+  } else if (lowerText.includes('pdvsync')) {
+    destiny = 'PDVSync';
+    systemFlow = 'ERP Winthor <-> WSH Core <-> PDVSync';
+  } else if (lowerText.includes('vtex')) {
+    destiny = 'VTEX';
+    systemFlow = 'ERP Winthor <-> WSH Core -> VTEX';
+  }
+
+  return { name, origin, destiny, integrators, systemFlow };
+};
 
 const Workflows = () => {
   const { user } = useAuth();
@@ -61,11 +304,12 @@ const Workflows = () => {
   const [creatorModalOpen, setCreatorModalOpen] = useState(false);
   const [creationMode, setCreationMode] = useState('markdown'); // 'markdown' | 'manual'
   const [manualRoutes, setManualRoutes] = useState([
-    { fluxo: 'FLUXO-1', nome: '', urlWta: '', projetoWta: '', direcao: 'enviar_pdvsync' }
+    { fluxo: 'FLUXO-1', nome: '', urlWta: '', projetoWta: '', direcao: 'enviar_pdvsync', metodoHttp: 'GET', descricao: '', status: 'Produção' }
   ]);
   const [wfName, setWfName] = useState('');
   const [systemMaster, setSystemMaster] = useState('');
   const [destiny, setDestiny] = useState('');
+  const [systemFlow, setSystemFlow] = useState('');
   const [integratorsRaw, setIntegratorsRaw] = useState('');
   const [markdownText, setMarkdownText] = useState('');
   const [jiraIssuesCount, setJiraIssuesCount] = useState(0);
@@ -116,6 +360,7 @@ const Workflows = () => {
   const [editWfName, setEditWfName] = useState('');
   const [editSystemMaster, setEditSystemMaster] = useState('');
   const [editDestiny, setEditDestiny] = useState('');
+  const [editSystemFlow, setEditSystemFlow] = useState('');
   const [editIntegratorsRaw, setEditIntegratorsRaw] = useState('');
 
   // Estados de Exclusão
@@ -128,10 +373,37 @@ const Workflows = () => {
   const [newRouteUrl, setNewRouteUrl] = useState('');
   const [newRouteProjeto, setNewRouteProjeto] = useState('');
   const [newRouteDirecao, setNewRouteDirecao] = useState('enviar_pdvsync');
+  const [newRouteMetodoHttp, setNewRouteMetodoHttp] = useState('GET');
+  const [newRouteDescricao, setNewRouteDescricao] = useState('');
+  const [newRouteStatus, setNewRouteStatus] = useState('Produção');
+
+  // Estado da Rota selecionada para Documentação (Swagger-like)
+  const [selectedDocRouteId, setSelectedDocRouteId] = useState('');
+  const selectedDocRoute = useMemo(() => {
+    if (!routes || routes.length === 0) return null;
+    return routes.find((r) => r.id === selectedDocRouteId) || routes[0];
+  }, [routes, selectedDocRouteId]);
+
+  // Estado de Edição Inline de Rota no Swagger
+  const [isEditingRoute, setIsEditingRoute] = useState(false);
+  const [activeMockTab, setActiveMockTab] = useState('input'); // 'input' | 'spec' | 'output'
+  const [editRouteForm, setEditRouteForm] = useState({
+    nome: '',
+    urlWta: '',
+    projetoWta: '',
+    metodoHttp: 'GET',
+    descricao: '',
+    status: 'Produção',
+    direcao: 'enviar_pdvsync'
+  });
 
   const selectedWf = useMemo(() => {
     return workflows.find((w) => w.id === selectedWorkflowId) || null;
   }, [workflows, selectedWorkflowId]);
+
+  const flowNodes = useMemo(() => {
+    return parseSystemFlow(selectedWf?.systemFlow, selectedWf?.systemMaster, selectedWf?.destiny);
+  }, [selectedWf]);
 
   // Categorias de Rotas
   const getRouteCategory = (fluxo) => {
@@ -340,12 +612,45 @@ const Workflows = () => {
     return () => unsub();
   }, [user?.teamId, selectedWorkflowId]);
 
+  // Autodetectar metadados do Markdown ao colar
+  useEffect(() => {
+    if (creationMode === 'markdown' && markdownText.trim() && creatorModalOpen) {
+      const inferred = inferMetadataFromMarkdown(markdownText);
+      if (inferred) {
+        if (inferred.name && !wfName) setWfName(inferred.name);
+        if (inferred.origin && !systemMaster) setSystemMaster(inferred.origin);
+        if (inferred.destiny && !destiny) setDestiny(inferred.destiny);
+        if (inferred.integrators && !integratorsRaw) setIntegratorsRaw(inferred.integrators);
+        if (inferred.systemFlow && !systemFlow) setSystemFlow(inferred.systemFlow);
+      }
+    }
+  }, [markdownText, creationMode, creatorModalOpen]);
+
+  const handleDetectMetadata = () => {
+    if (!markdownText.trim()) {
+      addToast('Cole o conteúdo do Markdown primeiro.', 'error');
+      return;
+    }
+    const inferred = inferMetadataFromMarkdown(markdownText);
+    if (inferred) {
+      setWfName(inferred.name || wfName);
+      setSystemMaster(inferred.origin || systemMaster);
+      setDestiny(inferred.destiny || destiny);
+      setIntegratorsRaw(inferred.integrators || integratorsRaw);
+      setSystemFlow(inferred.systemFlow || systemFlow);
+      addToast('Metadados detectados com sucesso!', 'success');
+    } else {
+      addToast('Não foi possível inferir metadados desse texto.', 'error');
+    }
+  };
+
   const handleOpenEditModal = () => {
     const wf = workflows.find((w) => w.id === selectedWorkflowId);
     if (!wf) return;
     setEditWfName(wf.name || '');
     setEditSystemMaster(wf.systemMaster || '');
     setEditDestiny(wf.destiny || '');
+    setEditSystemFlow(wf.systemFlow || '');
     setEditIntegratorsRaw(wf.integrators ? wf.integrators.join(', ') : '');
     setEditModalOpen(true);
   };
@@ -364,6 +669,7 @@ const Workflows = () => {
         name: editWfName,
         systemMaster: editSystemMaster,
         destiny: editDestiny,
+        systemFlow: editSystemFlow,
         integrators
       }, user);
 
@@ -437,6 +743,26 @@ const Workflows = () => {
     return groups;
   }, [routes, searchTerm]);
 
+  const routeStats = useMemo(() => {
+    const total = routes.length;
+    const methods = { GET: 0, POST: 0, PUT: 0, DELETE: 0, PATCH: 0 };
+    const statuses = { 'Produção': 0, 'Homologação': 0, 'Desenvolvimento': 0, 'Pendente': 0 };
+    
+    routes.forEach((r) => {
+      const m = r.metodoHttp || 'GET';
+      if (methods[m] !== undefined) methods[m]++;
+      
+      const s = r.status || 'Produção';
+      if (statuses[s] !== undefined) {
+        statuses[s]++;
+      } else {
+        statuses[s] = (statuses[s] || 0) + 1;
+      }
+    });
+
+    return { total, methods, statuses };
+  }, [routes]);
+
   const handleCreateWorkflow = async (e) => {
     e.preventDefault();
     if (!wfName || !systemMaster || !destiny) return;
@@ -452,6 +778,7 @@ const Workflows = () => {
         name: wfName,
         systemMaster,
         destiny,
+        systemFlow,
         integrators
       }, user);
 
@@ -480,7 +807,10 @@ const Workflows = () => {
             nome: r.nome.trim(),
             urlWta: r.urlWta.trim(),
             projetoWta: r.projetoWta.trim(),
-            direcao: r.direcao
+            direcao: r.direcao,
+            metodoHttp: r.metodoHttp || 'GET',
+            descricao: (r.descricao || '').trim(),
+            status: r.status || 'Produção'
           }));
         
         if (validManualRoutes.length > 0) {
@@ -493,12 +823,13 @@ const Workflows = () => {
       setWfName('');
       setSystemMaster('');
       setDestiny('');
+      setSystemFlow('');
       setIntegratorsRaw('');
       setMarkdownText('');
       setJiraRoutes([]);
       setJiraIssuesCount(0);
       setManualRoutes([
-        { fluxo: 'FLUXO-1', nome: '', urlWta: '', projetoWta: '', direcao: 'enviar_pdvsync' }
+        { fluxo: 'FLUXO-1', nome: '', urlWta: '', projetoWta: '', direcao: 'enviar_pdvsync', metodoHttp: 'GET', descricao: '', status: 'Produção' }
       ]);
       setCreatorModalOpen(false);
       setSelectedWorkflowId(docRef.id);
@@ -521,7 +852,10 @@ const Workflows = () => {
         nome: newRouteNome.trim(),
         urlWta: newRouteUrl.trim(),
         projetoWta: newRouteProjeto.trim(),
-        direcao: newRouteDirecao
+        direcao: newRouteDirecao,
+        metodoHttp: newRouteMetodoHttp,
+        descricao: newRouteDescricao.trim(),
+        status: newRouteStatus
       });
       // Resetar form
       setNewRouteFluxo('');
@@ -529,11 +863,69 @@ const Workflows = () => {
       setNewRouteUrl('');
       setNewRouteProjeto('');
       setNewRouteDirecao('enviar_pdvsync');
+      setNewRouteMetodoHttp('GET');
+      setNewRouteDescricao('');
+      setNewRouteStatus('Produção');
       setAddRouteModalOpen(false);
       addToast('Rota adicionada com sucesso!', 'success');
     } catch (err) {
       console.error('Erro ao adicionar rota única:', err);
       addToast('Erro ao adicionar rota.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleStartEditRoute = (route) => {
+    setEditRouteForm({
+      nome: route.nome,
+      urlWta: route.urlWta || '',
+      projetoWta: route.projetoWta || '',
+      metodoHttp: route.metodoHttp || 'GET',
+      descricao: route.descricao || '',
+      status: route.status || 'Produção',
+      direcao: route.direcao || 'enviar_pdvsync'
+    });
+    setIsEditingRoute(true);
+  };
+
+  const handleSaveRouteEdit = async (routeId) => {
+    if (!editRouteForm.nome.trim()) {
+      addToast('O nome da rota é obrigatório.', 'error');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await updateWorkflowRoute(routeId, {
+        nome: editRouteForm.nome.trim(),
+        urlWta: editRouteForm.urlWta.trim(),
+        projetoWta: editRouteForm.projetoWta.trim(),
+        metodoHttp: editRouteForm.metodoHttp,
+        descricao: editRouteForm.descricao.trim(),
+        status: editRouteForm.status,
+        direcao: editRouteForm.direcao
+      });
+      setIsEditingRoute(false);
+      addToast('Rota atualizada com sucesso!', 'success');
+    } catch (err) {
+      console.error('Erro ao atualizar rota:', err);
+      addToast('Erro ao salvar alterações na rota.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteRoute = async (routeId) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta rota permanentemente?')) return;
+    setIsSaving(true);
+    try {
+      await deleteWorkflowRoute(routeId);
+      setIsEditingRoute(false);
+      setSelectedDocRouteId('');
+      addToast('Rota excluída com sucesso!', 'success');
+    } catch (err) {
+      console.error('Erro ao excluir rota:', err);
+      addToast('Erro ao excluir a rota.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -764,6 +1156,9 @@ const Workflows = () => {
     let urlWtaIdx = -1;
     let projetoWtaIdx = -1;
     let direcaoIdx = -1;
+    let metodoHttpIdx = -1;
+    let descricaoIdx = -1;
+    let statusIdx = -1;
 
     for (const line of lines) {
       const trimmed = line.trim();
@@ -786,14 +1181,20 @@ const Workflows = () => {
         urlWtaIdx = -1;
         projetoWtaIdx = -1;
         direcaoIdx = -1;
+        metodoHttpIdx = -1;
+        descricaoIdx = -1;
+        statusIdx = -1;
 
         for (let i = 0; i < cols.length; i++) {
           const col = cols[i].toLowerCase();
           if (col.includes('fluxo') && !col.includes('vinculado') && !col.includes('rota')) fluxoIdx = i;
           if (col.includes('nome') || col.includes('fluxo vinculado') || col.includes('agendamento')) nomeIdx = i;
-          if (col.includes('url wta') || col.includes('url')) urlWtaIdx = i;
+          if (col.includes('url wta') || col.includes('url') || col.includes('rota/url')) urlWtaIdx = i;
           if (col.includes('projeto wta') || col.includes('projeto')) projetoWtaIdx = i;
           if (col.includes('dir') || col.includes('direção')) direcaoIdx = i;
+          if (col.includes('método') || col.includes('verbo') || col.includes('http') || col.includes('method')) metodoHttpIdx = i;
+          if (col.includes('descrição') || col.includes('description') || col.includes('obs') || col.includes('resumo') || col.includes('detalhe')) descricaoIdx = i;
+          if (col.includes('status') || col.includes('homolog') || col.includes('situa') || col.includes('estado')) statusIdx = i;
         }
         continue;
       }
@@ -858,13 +1259,46 @@ const Workflows = () => {
         direcao = 'online_direto';
       }
 
+      let metodoHttp = 'GET';
+      if (metodoHttpIdx !== -1 && metodoHttpIdx < cols.length) {
+        const cleanMet = cols[metodoHttpIdx].trim().toUpperCase().replace(/[^A-Z]/g, '');
+        if (['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(cleanMet)) {
+          metodoHttp = cleanMet;
+        }
+      }
+
+      let descricao = '';
+      if (descricaoIdx !== -1 && descricaoIdx < cols.length) {
+        descricao = cols[descricaoIdx].trim();
+      }
+      if (descricao === '—' || descricao.toLowerCase() === 'n/a') descricao = '';
+
+      let status = 'Produção';
+      if (statusIdx !== -1 && statusIdx < cols.length) {
+        const parsedStatus = cols[statusIdx].trim().toLowerCase();
+        if (parsedStatus.includes('homolog') || parsedStatus.includes('hml')) {
+          status = 'Homologação';
+        } else if (parsedStatus.includes('desenv') || parsedStatus.includes('dev')) {
+          status = 'Desenvolvimento';
+        } else if (parsedStatus.includes('pend') || parsedStatus.includes('aguard')) {
+          status = 'Pendente';
+        } else if (parsedStatus.includes('prod') || parsedStatus.includes('ativo') || parsedStatus.includes('atig')) {
+          status = 'Produção';
+        } else if (cols[statusIdx].trim()) {
+          status = cols[statusIdx].trim();
+        }
+      }
+
       parsed.push({
         workflowId,
         fluxo: fluxoVal,
         nome,
         urlWta,
         projetoWta,
-        direcao
+        direcao,
+        metodoHttp,
+        descricao,
+        status
       });
     }
     return parsed;
@@ -946,6 +1380,126 @@ const Workflows = () => {
       {selectedWorkflowId ? (
         <div className="space-y-6">
           
+          {/* STATS HERO DASHBOARD CARD */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md relative overflow-hidden shadow-lg">
+            {/* Background glowing line */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"></div>
+            
+            {/* Col 1: Total & Statuses */}
+            <div className="lg:col-span-3 flex flex-col justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Escopo da Integração</span>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-4xl font-black text-white tracking-tight">{routeStats.total}</span>
+                  <span className="text-xs font-semibold text-slate-400">rotas mapeadas</span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-[10px] font-bold text-slate-300">Prod: {routeStats.statuses['Produção'] || 0}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-500/5 border border-indigo-500/10 rounded-xl">
+                  <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
+                  <span className="text-[10px] font-bold text-slate-300">Hml: {routeStats.statuses['Homologação'] || 0}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                  <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                  <span className="text-[10px] font-bold text-slate-300">Dev: {routeStats.statuses['Desenvolvimento'] || 0}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-500/5 border border-slate-500/10 rounded-xl">
+                  <div className="h-2 w-2 rounded-full bg-slate-400"></div>
+                  <span className="text-[10px] font-bold text-slate-300">Pend: {routeStats.statuses['Pendente'] || 0}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Col 2: Flow Animation */}
+            <div className="lg:col-span-5 flex flex-col justify-center">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 block text-center lg:text-left">Fluxo Operacional de Dados</span>
+              
+              <div className="flex items-center justify-between py-3 px-4 bg-slate-950/40 border border-slate-950 rounded-xl relative overflow-hidden min-h-[90px] overflow-x-auto">
+                {flowNodes.map((node, index) => {
+                  if (node.type === 'connector') {
+                    const isBidirectional = node.direction === '<->';
+                    const isRightToLeft = node.direction === '<-';
+                    
+                    return (
+                      <div key={index} className="flex-grow h-0.5 relative mx-2 min-w-[30px] max-w-[80px]">
+                        {/* Base line */}
+                        <div className="absolute inset-0 bg-slate-800 rounded-full"></div>
+                        {/* Animated flow line */}
+                        {isBidirectional ? (
+                          <>
+                            <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-indigo-500 to-indigo-300 rounded-full" style={{ width: '40%', animation: 'flowLeftToRight 2s infinite linear' }}></div>
+                            <div className="absolute inset-y-0 left-0 bg-gradient-to-l from-indigo-500 to-indigo-300 rounded-full" style={{ width: '40%', animation: 'flowRightToLeft 2s infinite linear' }}></div>
+                          </>
+                        ) : isRightToLeft ? (
+                          <div className="absolute inset-y-0 left-0 bg-gradient-to-l from-indigo-500 to-indigo-300 rounded-full" style={{ width: '40%', animation: 'flowRightToLeft 2s infinite linear' }}></div>
+                        ) : (
+                          <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-indigo-500 to-indigo-300 rounded-full" style={{ width: '40%', animation: 'flowLeftToRight 2s infinite linear' }}></div>
+                        )}
+                      </div>
+                    );
+                  } else {
+                    const isEngine = node.type === 'engine';
+                    const nameLower = node.name.toLowerCase();
+                    const Icon = isEngine ? Cpu : nameLower.includes('db') || nameLower.includes('oracle') ? Database : Server;
+                    const colorClass = isEngine
+                      ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 shadow-lg'
+                      : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-glow-indigo';
+                    
+                    return (
+                      <div key={index} className="flex flex-col items-center gap-1 z-10 shrink-0">
+                        <span className={`p-2 rounded-lg border ${colorClass} ${isEngine ? 'animate-spin' : ''}`} style={isEngine ? { animationDuration: '8s' } : {}}>
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span className="text-[9px] font-bold text-slate-300 max-w-[80px] truncate text-center">{node.name}</span>
+                      </div>
+                    );
+                  }
+                })}
+                
+                {/* CSS animation inline */}
+                <style dangerouslySetInnerHTML={{__html: `
+                  @keyframes flowLeftToRight {
+                    0% { left: 0%; opacity: 0; }
+                    15% { opacity: 1; }
+                    85% { opacity: 1; }
+                    100% { left: 100%; opacity: 0; }
+                  }
+                  @keyframes flowRightToLeft {
+                    0% { left: 100%; opacity: 0; }
+                    15% { opacity: 1; }
+                    85% { opacity: 1; }
+                    100% { left: 0%; opacity: 0; }
+                  }
+                `}} />
+              </div>
+            </div>
+
+            {/* Col 3: HTTP Verbs */}
+            <div className="lg:col-span-4 flex flex-col justify-between gap-2.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Verbos HTTP</span>
+              
+              <div className="grid grid-cols-5 gap-2">
+                {[
+                  { m: 'GET', label: 'GET', style: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+                  { m: 'POST', label: 'POST', style: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
+                  { m: 'PUT', label: 'PUT', style: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+                  { m: 'DELETE', label: 'DEL', style: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
+                  { m: 'PATCH', label: 'PAT', style: 'bg-purple-500/10 text-purple-400 border-purple-500/20' }
+                ].map((verb) => (
+                  <div key={verb.m} className={`flex flex-col items-center justify-center p-2 rounded-xl border ${verb.style}`}>
+                    <span className="text-[10px] font-black">{verb.label}</span>
+                    <span className="text-sm font-bold mt-1 text-white">{routeStats.methods[verb.m] || 0}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
           {/* CONTROLE DE ABAS (INTERATIVIDADE ESTILO HTML) */}
           <div className="flex border-b border-slate-900 gap-1.5 pb-px">
             <button
@@ -970,6 +1524,18 @@ const Workflows = () => {
             >
               <Layers className="h-4 w-4" />
               <span>Mapeamento de Rotas (Tabelas)</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('doc_tecnica')}
+              className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs font-bold tracking-wide transition-all uppercase ${
+                activeTab === 'doc_tecnica'
+                  ? 'border-indigo-500 text-white bg-indigo-500/5'
+                  : 'border-transparent text-slate-500 hover:text-slate-300 hover:bg-slate-900/40'
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              <span>Documentação Técnica (Swagger)</span>
             </button>
 
             <button
@@ -1173,6 +1739,368 @@ const Workflows = () => {
             )}
           </AnimatePresence>
 
+          {/* TAB 1.5: DOCUMENTAÇÃO TÉCNICA (SWAGGER-STYLE) */}
+          {activeTab === 'doc_tecnica' && (
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {/* Coluna Esquerda: Listagem de Rotas */}
+              <div className="md:col-span-4 lg:col-span-3 h-[70vh] flex flex-col bg-slate-900/30 border border-slate-900 p-4 rounded-2xl">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 block">Explorador de Rotas</span>
+                
+                {/* Busca Local */}
+                <div className="relative mb-3 shrink-0">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
+                    <Search className="h-3.5 w-3.5" />
+                  </span>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Filtrar rotas..."
+                    className="premium-input pl-9 py-1.5 text-xs bg-slate-950"
+                  />
+                </div>
+
+                {/* Lista de Rotas Scrollable */}
+                <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
+                  {categoriesDefinition.map((catDef) => {
+                    const routesInCat = routes.filter((r) => {
+                      const belongs = getRouteCategory(r.fluxo) === catDef.name;
+                      const matches = !searchTerm || 
+                        r.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        r.fluxo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (r.urlWta && r.urlWta.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                        (r.projetoWta && r.projetoWta.toLowerCase().includes(searchTerm.toLowerCase()));
+                      return belongs && matches;
+                    });
+
+                    if (routesInCat.length === 0) return null;
+
+                    return (
+                      <div key={catDef.name} className="space-y-1">
+                        <span className={`px-2 py-0.5 text-[8px] font-extrabold uppercase rounded border ${catDef.styleClass} block w-fit mb-1.5`}>
+                          {catDef.label}
+                        </span>
+                        <div className="space-y-1">
+                          {routesInCat.map((route) => {
+                            const isSelected = selectedDocRoute?.id === route.id;
+                            const methodColors = {
+                              GET: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                              POST: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+                              PUT: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                              DELETE: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                              PATCH: 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                            };
+                            const mBadge = route.metodoHttp || 'GET';
+                            const badgeStyle = methodColors[mBadge] || 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+
+                            return (
+                              <button
+                                key={route.id}
+                                onClick={() => {
+                                  setSelectedDocRouteId(route.id);
+                                  setIsEditingRoute(false);
+                                }}
+                                className={`w-full text-left p-2 rounded-xl border transition-all flex items-center gap-2 ${
+                                  isSelected
+                                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-md'
+                                    : 'bg-slate-950/20 border-slate-900 hover:border-slate-800 text-slate-300'
+                                }`}
+                              >
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black border uppercase shrink-0 ${badgeStyle}`}>
+                                  {mBadge}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <span className="text-[10px] font-bold block truncate">{route.fluxo}</span>
+                                  <span className={`text-[9px] block truncate ${isSelected ? 'text-indigo-200' : 'text-slate-500'}`}>
+                                    {route.nome}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Coluna Direita: Detalhamento Técnico */}
+              <div className="md:col-span-8 lg:col-span-9 flex flex-col bg-slate-900/30 border border-slate-900 p-6 rounded-2xl min-h-[70vh]">
+                {!selectedDocRoute ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
+                    <FileText className="h-12 w-12 text-slate-700 mb-4 animate-pulse" />
+                    <p className="text-slate-500 font-medium text-sm">Selecione uma rota no menu lateral para visualizar os detalhes técnicos.</p>
+                  </div>
+                ) : isEditingRoute ? (
+                  /* Modo Edição */
+                  <form onSubmit={(e) => { e.preventDefault(); handleSaveRouteEdit(selectedDocRoute.id); }} className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-900 pb-3 mb-4">
+                      <div>
+                        <h4 className="font-bold text-sm text-white">Editar Parâmetros da Rota</h4>
+                        <p className="text-[10px] text-indigo-400 font-mono font-bold mt-0.5">{selectedDocRoute.fluxo}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingRoute(false)}
+                          className="px-3.5 py-1.5 bg-slate-950 border border-slate-900 hover:border-slate-800 text-slate-300 rounded-lg text-xs font-semibold transition-all"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSaving}
+                          className="btn-primary px-3.5 py-1.5 rounded-lg text-xs font-semibold"
+                        >
+                          {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-400 mb-1.5">Nome do Fluxo</label>
+                        <input
+                          type="text"
+                          required
+                          value={editRouteForm.nome}
+                          onChange={(e) => setEditRouteForm({ ...editRouteForm, nome: e.target.value })}
+                          className="premium-input py-2 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-400 mb-1.5">URL {selectedWf?.systemMaster || 'Origem'} (API)</label>
+                        <input
+                          type="text"
+                          value={editRouteForm.urlWta}
+                          onChange={(e) => setEditRouteForm({ ...editRouteForm, urlWta: e.target.value })}
+                          className="premium-input py-2 text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-400 mb-1.5">Projeto {selectedWf?.systemMaster || 'Origem'}</label>
+                        <input
+                          type="text"
+                          value={editRouteForm.projetoWta}
+                          onChange={(e) => setEditRouteForm({ ...editRouteForm, projetoWta: e.target.value })}
+                          className="premium-input py-2 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-400 mb-1.5">Método HTTP</label>
+                        <select
+                          value={editRouteForm.metodoHttp}
+                          onChange={(e) => setEditRouteForm({ ...editRouteForm, metodoHttp: e.target.value })}
+                          className="premium-input py-2 text-xs bg-slate-950 text-slate-300"
+                        >
+                          <option value="GET">GET</option>
+                          <option value="POST">POST</option>
+                          <option value="PUT">PUT</option>
+                          <option value="DELETE">DELETE</option>
+                          <option value="PATCH">PATCH</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-400 mb-1.5">Status da Rota</label>
+                        <select
+                          value={editRouteForm.status}
+                          onChange={(e) => setEditRouteForm({ ...editRouteForm, status: e.target.value })}
+                          className="premium-input py-2 text-xs bg-slate-950 text-slate-300"
+                        >
+                          <option value="Produção">Produção</option>
+                          <option value="Homologação">Homologação</option>
+                          <option value="Desenvolvimento">Desenvolvimento</option>
+                          <option value="Pendente">Pendente</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-400 mb-1.5">Direção</label>
+                      <select
+                        value={editRouteForm.direcao}
+                        onChange={(e) => setEditRouteForm({ ...editRouteForm, direcao: e.target.value })}
+                        className="premium-input py-2 text-xs bg-slate-950 text-slate-300"
+                      >
+                        <option value="enviar_pdvsync">→ {selectedWf?.destiny || 'Destino'}</option>
+                        <option value="enviar_wta">→ {selectedWf?.systemMaster || 'Origem'}</option>
+                        <option value="monitor">Monitor</option>
+                        <option value="online_direto">Online Direto</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-400 mb-1.5">Descrição da Rota</label>
+                      <textarea
+                        rows={4}
+                        value={editRouteForm.descricao}
+                        onChange={(e) => setEditRouteForm({ ...editRouteForm, descricao: e.target.value })}
+                        className="premium-input text-xs resize-none"
+                        placeholder="Descreva a finalidade desta rota..."
+                      />
+                    </div>
+                  </form>
+                ) : (
+                  /* Modo Visualização */
+                  <div className="space-y-5 flex-1 flex flex-col justify-between">
+                    <div className="space-y-5">
+                      {/* Cabeçalho */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-900 pb-4">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className={`px-2 py-0.5 rounded text-xs font-black border uppercase shrink-0 ${
+                            (selectedDocRoute.metodoHttp === 'GET' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                             selectedDocRoute.metodoHttp === 'POST' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
+                             selectedDocRoute.metodoHttp === 'PUT' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                             selectedDocRoute.metodoHttp === 'DELETE' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                             'bg-purple-500/10 text-purple-400 border-purple-500/20')
+                          }`}>
+                            {selectedDocRoute.metodoHttp || 'GET'}
+                          </span>
+                          <span className="font-mono text-xs text-slate-300 font-bold select-all truncate bg-slate-950 px-2 py-1 rounded border border-slate-950">
+                            {selectedDocRoute.urlWta || '—'}
+                          </span>
+                          {selectedDocRoute.urlWta && (
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(selectedDocRoute.urlWta);
+                                addToast('URL copiada!', 'success');
+                              }}
+                              className="p-1 rounded bg-slate-950 border border-slate-950 hover:border-slate-800 text-slate-400 hover:text-white transition-colors"
+                              title="Copiar URL"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Ações */}
+                        <div className="flex gap-2 self-end sm:self-auto shrink-0">
+                          <button
+                            onClick={() => handleStartEditRoute(selectedDocRoute)}
+                            className="p-1.5 rounded-lg bg-slate-950 border border-slate-950 hover:border-slate-800 text-slate-400 hover:text-white transition-colors"
+                            title="Editar Rota"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRoute(selectedDocRoute.id)}
+                            className="p-1.5 rounded-lg bg-slate-950 border border-slate-950 hover:border-rose-900/50 hover:bg-rose-950/20 text-slate-400 hover:text-rose-400 transition-colors"
+                            title="Excluir Rota"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Grade de Informações Básicas */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-950/40 p-4 rounded-xl border border-slate-950">
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">Identificador</span>
+                          <span className="text-xs text-slate-300 font-bold mt-0.5 block">{selectedDocRoute.fluxo}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">Projeto WTA</span>
+                          <span className="text-xs text-slate-300 font-bold mt-0.5 block">
+                            {selectedDocRoute.projetoWta ? (
+                              <span className="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/10 rounded font-semibold text-[9px] inline-block mt-0.5">
+                                {selectedDocRoute.projetoWta}
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">Status da Rota</span>
+                          <span className="text-xs text-slate-300 font-bold mt-0.5 block">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border inline-block mt-0.5 ${
+                              ((selectedDocRoute.status || 'Produção') === 'Produção' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]' :
+                               (selectedDocRoute.status || 'Produção') === 'Homologação' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-[0_0_10px_rgba(99,102,241,0.1)]' :
+                               (selectedDocRoute.status || 'Produção') === 'Desenvolvimento' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]' :
+                               'bg-slate-500/10 text-slate-400 border-slate-500/20')
+                            }`}>
+                              {selectedDocRoute.status || 'Produção'}
+                            </span>
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">Direção</span>
+                          <span className="text-xs text-slate-300 font-bold mt-0.5 block">
+                            {getDirectionBadge(selectedDocRoute.direcao)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Descrição */}
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Descrição Funcional</span>
+                        <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/20 border border-slate-900/40 rounded-xl p-3">
+                          {selectedDocRoute.descricao || 'Nenhuma descrição detalhada cadastrada para esta rota.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Swagger Mock JSON Tabs */}
+                    {(() => {
+                      const mockData = getMockData(selectedDocRoute);
+                      const activeMockJson = activeMockTab === 'input' ? mockData.input 
+                                           : activeMockTab === 'spec' ? mockData.spec 
+                                           : mockData.output;
+                      const jsonString = JSON.stringify(activeMockJson, null, 2);
+
+                      return (
+                        <div className="border-t border-slate-900 pt-5 mt-4">
+                          <div className="flex items-center justify-between mb-3.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Playground de Payload (Integração WSH)</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(jsonString);
+                                addToast('JSON copiado!', 'success');
+                              }}
+                              className="px-2 py-1 bg-slate-950 border border-slate-900 hover:border-slate-800 text-slate-400 hover:text-white rounded-lg text-[9px] font-bold transition-all flex items-center gap-1 shrink-0"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                              <span>Copiar JSON</span>
+                            </button>
+                          </div>
+                          
+                          {/* Tabs */}
+                          <div className="flex bg-slate-950 border border-slate-950 rounded-xl p-1 gap-1 mb-2.5">
+                            {[
+                              { id: 'input', label: `1. Entrada (${selectedWf?.systemMaster || 'Origem'})` },
+                              { id: 'spec', label: '2. Jolt Spec' },
+                              { id: 'output', label: `3. Saída (${selectedWf?.destiny || 'Destino'})` }
+                            ].map((subTab) => (
+                              <button
+                                key={subTab.id}
+                                onClick={() => setActiveMockTab(subTab.id)}
+                                className={`flex-1 py-1 rounded-lg text-[9px] font-bold transition-all ${
+                                  activeMockTab === subTab.id
+                                    ? 'bg-indigo-600 text-white shadow-md'
+                                    : 'text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                {subTab.label}
+                              </button>
+                            ))}
+                          </div>
+
+                          <pre className="font-mono text-[10px] text-emerald-400 bg-slate-950/80 border border-slate-950 p-3.5 rounded-xl max-h-[190px] overflow-auto select-all custom-scrollbar">
+                            {jsonString}
+                          </pre>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* TAB 2: TABELAS DE ROTAS DETALHADAS POR CATEGORIA */}
           {activeTab === 'routes' && (
             <div className="space-y-6">
@@ -1240,34 +2168,63 @@ const Workflows = () => {
 
                       {/* Tabela de Rotas */}
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-[11px]">
+                        <table className="w-full text-left border-collapse text-xs">
                           <thead>
                             <tr className="bg-slate-950/40 text-slate-400 border-b border-slate-900 font-semibold uppercase tracking-wider">
-                              <th className="py-2.5 px-4 w-[12%]">Fluxo</th>
-                              <th className="py-2.5 px-4 w-[28%]">Nome do Fluxo</th>
-                              <th className="py-2.5 px-4 w-[30%]">URL WTA (ERP)</th>
-                              <th className="py-2.5 px-4 w-[18%]">Projeto WTA</th>
-                              <th className="py-2.5 px-4 w-[12%]">Direção</th>
+                              <th className="py-3 px-4 w-[10%]">Fluxo</th>
+                              <th className="py-3 px-4 w-[8%]">Método</th>
+                              <th className="py-3 px-4 w-[24%]">Nome do Fluxo</th>
+                              <th className="py-3 px-4 w-[28%]">URL WTA (API)</th>
+                              <th className="py-3 px-4 w-[14%]">Projeto WTA</th>
+                              <th className="py-3 px-4 w-[10%]">Status</th>
+                              <th className="py-3 px-4 w-[6%]">Direção</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-900/40">
-                            {routesInCat.map((route) => (
-                              <tr key={route.id} className="hover:bg-slate-900/20 transition-colors">
-                                <td className="py-3 px-4 font-bold text-white text-[12px]">{route.fluxo}</td>
-                                <td className="py-3 px-4 font-medium text-slate-200">{route.nome}</td>
-                                <td className="py-3 px-4 font-mono text-slate-400">{route.urlWta || '—'}</td>
-                                <td className="py-3 px-4">
-                                  {route.projetoWta ? (
-                                    <span className="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/10 rounded font-semibold text-[10px]">
-                                      {route.projetoWta}
+                          <tbody className="divide-y divide-slate-900/40 text-[13px]">
+                            {routesInCat.map((route) => {
+                              const methodColors = {
+                                GET: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                                POST: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+                                PUT: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                                DELETE: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                                PATCH: 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                              };
+                              const mBadge = route.metodoHttp || 'GET';
+                              const badgeStyle = methodColors[mBadge] || 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+
+                              return (
+                                <tr key={route.id} className="hover:bg-slate-900/20 transition-colors">
+                                  <td className="py-3.5 px-4 font-bold text-white">{route.fluxo}</td>
+                                  <td className="py-3.5 px-4">
+                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase shrink-0 ${badgeStyle}`}>
+                                      {mBadge}
                                     </span>
-                                  ) : (
-                                    <span className="text-slate-600">—</span>
-                                  )}
-                                </td>
-                                <td className="py-3 px-4">{getDirectionBadge(route.direcao)}</td>
-                              </tr>
-                            ))}
+                                  </td>
+                                  <td className="py-3.5 px-4 font-medium text-slate-200">{route.nome}</td>
+                                  <td className="py-3.5 px-4 font-mono text-slate-400">{route.urlWta || '—'}</td>
+                                  <td className="py-3.5 px-4">
+                                    {route.projetoWta ? (
+                                      <span className="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/10 rounded font-semibold text-[10px]">
+                                        {route.projetoWta}
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-600">—</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3.5 px-4">
+                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border inline-block ${
+                                      ((route.status || 'Produção') === 'Produção' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                       (route.status || 'Produção') === 'Homologação' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
+                                       (route.status || 'Produção') === 'Desenvolvimento' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                       'bg-slate-500/10 text-slate-400 border-slate-500/20')
+                                    }`}>
+                                      {route.status || 'Produção'}
+                                    </span>
+                                  </td>
+                                  <td className="py-3.5 px-4">{getDirectionBadge(route.direcao)}</td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -1454,7 +2411,7 @@ const Workflows = () => {
       {/* MODAL DE CRIAÇÃO / IMPORTAÇÃO */}
       <AnimatePresence>
         {creatorModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-4 md:p-10 overflow-y-auto">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1467,7 +2424,7 @@ const Workflows = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto shadow-2xl relative z-10 custom-scrollbar"
+              className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-5xl shadow-2xl relative z-10 my-10"
             >
               <h3 className="text-xl font-bold text-white mb-2">Criar ou Importar Workflow de Equipe</h3>
               <p className="text-xs text-slate-400 mb-6">Cadastre metadados e defina as rotas colando uma tabela Markdown ou adicionando visualmente.</p>
@@ -1521,6 +2478,19 @@ const Workflows = () => {
                     />
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Fluxo de Sistemas Personalizado (Opcional - ex: WinThor &lt;-&gt; WSH &lt;-&gt; PDVSync -🚀 PDVOmni)</label>
+                  <input
+                    type="text"
+                    value={systemFlow}
+                    onChange={(e) => setSystemFlow(e.target.value)}
+                    placeholder="Ex: ERP Winthor <-> WSH Core <-> PDVSync -> PDVOmni"
+                    className="premium-input"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">Escreva a sequência usando <code className="bg-slate-950 px-1 py-0.5 rounded font-mono">&lt;-&gt;</code>, <code className="bg-slate-950 px-1 py-0.5 rounded font-mono">-&gt;</code> ou <code className="bg-slate-950 px-1 py-0.5 rounded font-mono">&lt;-</code> para representar as direções animadas das setas.</p>
+                </div>
+
 
                 {/* Alternância de Modo de Criação */}
                 <div className="flex gap-2 mb-6 border-b border-slate-800 pb-2">
@@ -1590,10 +2560,20 @@ const Workflows = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center gap-1.5">
-                        <FileText className="h-4 w-4 text-indigo-400" />
-                        <span>Cole a tabela Markdown</span>
-                      </label>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                          <FileText className="h-4 w-4 text-indigo-400" />
+                          <span>Cole a tabela ou o documento Markdown</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleDetectMetadata}
+                          className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-500/10 border border-indigo-500/10 px-2.5 py-1 rounded-lg"
+                          title="Extrai automaticamente Nome do Workflow, Sistemas de Origem e Destino, Integradores e Cadeia de Fluxo"
+                        >
+                          ✨ Detectar Metadados
+                        </button>
+                      </div>
                       <textarea
                         rows={8}
                         value={markdownText}
@@ -1609,7 +2589,7 @@ const Workflows = () => {
                       <span className="text-xs font-bold text-white block">Adicionar Rotas Manuais</span>
                       <button
                         type="button"
-                        onClick={() => setManualRoutes(prev => [...prev, { fluxo: `FLUXO-${prev.length + 1}`, nome: '', urlWta: '', projetoWta: '', direcao: 'enviar_pdvsync' }])}
+                        onClick={() => setManualRoutes(prev => [...prev, { fluxo: `FLUXO-${prev.length + 1}`, nome: '', urlWta: '', projetoWta: '', direcao: 'enviar_pdvsync', metodoHttp: 'GET', descricao: '', status: 'Produção' }])}
                         className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-500/10 border border-indigo-500/10 px-2 py-1 rounded flex items-center gap-1"
                       >
                         <Plus className="h-3 w-3" />
@@ -1653,7 +2633,7 @@ const Workflows = () => {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                           <div className="md:col-span-2">
                             <label className="block text-[10px] font-semibold text-slate-400 mb-1">URL {systemMaster || 'Origem'} (ex: /v1/pedidos)</label>
                             <input
@@ -1674,20 +2654,60 @@ const Workflows = () => {
                               className="premium-input py-1.5 text-xs bg-slate-950"
                             />
                           </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-400 mb-1">Método HTTP</label>
+                            <select
+                              value={route.metodoHttp || 'GET'}
+                              onChange={(e) => setManualRoutes(prev => prev.map((r, i) => i === idx ? { ...r, metodoHttp: e.target.value } : r))}
+                              className="premium-input py-1.5 text-xs bg-slate-950"
+                            >
+                              <option value="GET">GET</option>
+                              <option value="POST">POST</option>
+                              <option value="PUT">PUT</option>
+                              <option value="DELETE">DELETE</option>
+                              <option value="PATCH">PATCH</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-400 mb-1">Direção</label>
+                            <select
+                              value={route.direcao}
+                              onChange={(e) => setManualRoutes(prev => prev.map((r, i) => i === idx ? { ...r, direcao: e.target.value } : r))}
+                              className="premium-input py-1.5 text-xs bg-slate-950"
+                            >
+                              <option value="enviar_pdvsync">→ {destiny || 'Destino'}</option>
+                              <option value="enviar_wta">→ {systemMaster || 'Origem'}</option>
+                              <option value="monitor">Monitor</option>
+                              <option value="online_direto">Online Direto</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-400 mb-1">Status da Rota</label>
+                            <select
+                              value={route.status || 'Produção'}
+                              onChange={(e) => setManualRoutes(prev => prev.map((r, i) => i === idx ? { ...r, status: e.target.value } : r))}
+                              className="premium-input py-1.5 text-xs bg-slate-950"
+                            >
+                              <option value="Produção">Produção</option>
+                              <option value="Homologação">Homologação</option>
+                              <option value="Desenvolvimento">Desenvolvimento</option>
+                              <option value="Pendente">Pendente</option>
+                            </select>
+                          </div>
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-semibold text-slate-400 mb-1">Direção</label>
-                          <select
-                            value={route.direcao}
-                            onChange={(e) => setManualRoutes(prev => prev.map((r, i) => i === idx ? { ...r, direcao: e.target.value } : r))}
-                            className="premium-input py-1.5 text-xs bg-slate-950"
-                          >
-                            <option value="enviar_pdvsync">→ {destiny || 'Destino'}</option>
-                            <option value="enviar_wta">→ {systemMaster || 'Origem'}</option>
-                            <option value="monitor">Monitor</option>
-                            <option value="online_direto">Online Direto</option>
-                          </select>
+                          <label className="block text-[10px] font-semibold text-slate-400 mb-1">Descrição</label>
+                          <textarea
+                            rows={2}
+                            value={route.descricao || ''}
+                            onChange={(e) => setManualRoutes(prev => prev.map((r, i) => i === idx ? { ...r, descricao: e.target.value } : r))}
+                            placeholder="Descreva brevemente o que esta rota realiza..."
+                            className="premium-input py-1.5 text-xs bg-slate-950 resize-none"
+                          />
                         </div>
                       </div>
                     ))}
@@ -1727,7 +2747,7 @@ const Workflows = () => {
       {/* MODAL DE EDIÇÃO */}
       <AnimatePresence>
         {editModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-4 md:p-10 overflow-y-auto">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1740,7 +2760,7 @@ const Workflows = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative z-10 custom-scrollbar"
+              className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-2xl shadow-2xl relative z-10 my-10"
             >
               <h3 className="text-xl font-bold text-white mb-2">Editar Metadados do Workflow</h3>
               <p className="text-xs text-slate-400 mb-6">Atualize as informações de identificação do fluxo de integração.</p>
@@ -1793,6 +2813,18 @@ const Workflows = () => {
                       className="premium-input"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Fluxo de Sistemas Personalizado (Opcional - ex: WinThor &lt;-&gt; WSH &lt;-&gt; PDVSync -🚀 PDVOmni)</label>
+                  <input
+                    type="text"
+                    value={editSystemFlow}
+                    onChange={(e) => setEditSystemFlow(e.target.value)}
+                    placeholder="Ex: ERP Winthor <-> WSH Core <-> PDVSync -> PDVOmni"
+                    className="premium-input"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">Escreva a sequência usando <code className="bg-slate-950 px-1 py-0.5 rounded font-mono">&lt;-&gt;</code>, <code className="bg-slate-950 px-1 py-0.5 rounded font-mono">-&gt;</code> ou <code className="bg-slate-950 px-1 py-0.5 rounded font-mono">&lt;-</code> para representar as direções animadas das setas.</p>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
@@ -1934,26 +2966,57 @@ const Workflows = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">URL {selectedWf?.systemMaster || 'Origem'} (API)</label>
-                  <input
-                    type="text"
-                    value={newRouteUrl}
-                    onChange={(e) => setNewRouteUrl(e.target.value)}
-                    placeholder="/v1/pedidos"
-                    className="premium-input text-xs"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5">URL {selectedWf?.systemMaster || 'Origem'} (API)</label>
+                    <input
+                      type="text"
+                      value={newRouteUrl}
+                      onChange={(e) => setNewRouteUrl(e.target.value)}
+                      placeholder="/v1/pedidos"
+                      className="premium-input text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5">Método HTTP</label>
+                    <select
+                      value={newRouteMetodoHttp}
+                      onChange={(e) => setNewRouteMetodoHttp(e.target.value)}
+                      className="premium-input bg-slate-950 text-xs"
+                    >
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                      <option value="PUT">PUT</option>
+                      <option value="DELETE">DELETE</option>
+                      <option value="PATCH">PATCH</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Projeto {selectedWf?.systemMaster || 'Origem'}</label>
-                  <input
-                    type="text"
-                    value={newRouteProjeto}
-                    onChange={(e) => setNewRouteProjeto(e.target.value)}
-                    placeholder="projeto-integracao"
-                    className="premium-input text-xs"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5">Projeto {selectedWf?.systemMaster || 'Origem'}</label>
+                    <input
+                      type="text"
+                      value={newRouteProjeto}
+                      onChange={(e) => setNewRouteProjeto(e.target.value)}
+                      placeholder="projeto-integracao"
+                      className="premium-input text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5">Status da Rota</label>
+                    <select
+                      value={newRouteStatus}
+                      onChange={(e) => setNewRouteStatus(e.target.value)}
+                      className="premium-input bg-slate-950 text-xs"
+                    >
+                      <option value="Produção">Produção</option>
+                      <option value="Homologação">Homologação</option>
+                      <option value="Desenvolvimento">Desenvolvimento</option>
+                      <option value="Pendente">Pendente</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>
@@ -1968,6 +3031,17 @@ const Workflows = () => {
                     <option value="monitor">Monitor</option>
                     <option value="online_direto">Online Direto</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Descrição da Rota</label>
+                  <textarea
+                    rows={3}
+                    value={newRouteDescricao}
+                    onChange={(e) => setNewRouteDescricao(e.target.value)}
+                    placeholder="Descreva o que a API realiza e suas regras de negócio..."
+                    className="premium-input text-xs resize-none"
+                  />
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">

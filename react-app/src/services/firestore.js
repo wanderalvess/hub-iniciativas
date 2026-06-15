@@ -248,6 +248,16 @@ export const addWorkflowRoute = async (routeData) => {
   return addDoc(collection(db, 'workflow_routes'), routeData);
 };
 
+export const updateWorkflowRoute = async (routeId, routeData) => {
+  const routeRef = doc(db, 'workflow_routes', routeId);
+  return updateDoc(routeRef, routeData);
+};
+
+export const deleteWorkflowRoute = async (routeId) => {
+  const routeRef = doc(db, 'workflow_routes', routeId);
+  return deleteDoc(routeRef);
+};
+
 // ==========================================
 // 5. Gestão de Times (Onboarding)
 // ==========================================

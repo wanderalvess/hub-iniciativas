@@ -1,81 +1,3 @@
-// ===============================================================
-// Assumed Data Model
-// ===============================================================
-//
-// Collection: users
-// Document ID: Firebase Auth UID
-// Fields:
-//   - uid: string (required, immutable) - ID do usuário no Firebase Auth
-//   - email: string (required) - E-mail do usuário
-//   - displayName: string (required, max size: 100) - Nome de exibição
-//   - photoURL: string (optional, URL format) - Avatar do usuário
-//   - teamId: string (required, enum) - Time do usuário (ex: 'mississauga')
-//   - role: string (required, enum: 'admin', 'member') - Permissão do usuário
-//   - createdAt: timestamp (required, immutable) - Data de criação
-//
-// Collection: feed
-// Document ID: Auto-gerado
-// Fields:
-//   - title: string (required, max size: 200) - Título do post
-//   - content: string (required, max size: 5000) - Conteúdo da postagem
-//   - category: string (required, enum: 'ideia', 'iniciativa', 'duvida', 'link', 'skill')
-//   - status: string (required, enum: 'planejado', 'em_progresso', 'concluido', 'nao_aplicavel')
-//   - tags: list of strings (required, max size: 10) - Tags de categorização
-//   - author: string (required, max size: 100) - Nome do autor
-//   - authorUid: string (required, immutable) - UID do autor
-//   - teamId: string (required) - ID do time que pertence o feed
-//   - likes: number (required) - Contador de likes
-//   - likedBy: list of strings (required) - Lista de UIDs que deram like
-//   - createdAt: timestamp (required, immutable) - Data de criação
-//
-// Collection: environments
-// Document ID: Customizado (ex: 'vm-19')
-// Fields:
-//   - name: string (required, max size: 50) - Nome do ambiente
-//   - description: string (required, max size: 1000) - Descrição detalhada
-//   - status: string (required, enum: 'disponivel', 'em_uso', 'manutencao')
-//   - currentUser: string (optional, max size: 100) - Nome do usuário utilizando a VM
-//   - currentUserUid: string (optional) - UID do usuário utilizando a VM
-//   - ip: string (optional, max size: 45) - IP do ambiente
-//   - lastUpdated: timestamp (required) - Data da última reserva/liberação
-//   - teamId: string (required) - Time dono da VM
-//
-// Collection: ai_skills
-// Document ID: Customizado (ex: 'revisao-rotas-wsh')
-// Fields:
-//   - name: string (required, max size: 100) - Nome amigável da skill
-//   - description: string (required, max size: 1000) - Descrição de uso
-//   - promptTemplate: string (required, max size: 10000) - Corpo do prompt
-//   - arguments: list of maps (required) - Parâmetros do prompt
-//   - author: string (required, max size: 100) - Autor da skill
-//   - teamId: string (required) - Time dono da skill
-//   - updatedAt: timestamp (required) - Data de atualização
-//
-// Collection: workflows
-// Document ID: Auto-gerado ou customizado
-// Fields:
-//   - name: string (required, max size: 150) - Nome do fluxo
-//   - systemMaster: string (required, max size: 100) - ERP/Master
-//   - integrators: list of strings (required) - Lista de intermediários
-//   - destiny: string (required, max size: 100) - Destino
-//   - teamId: string (required) - Time dono do fluxo
-//   - createdAt: timestamp (required, immutable)
-//   - createdBy: string (required, max size: 100)
-//
-// Collection: workflow_routes
-// Document ID: Auto-gerado
-// Fields:
-//   - workflowId: string (required) - ID do workflow pai
-//   - fluxo: string (required, max size: 30) - Identificador do fluxo (ex: 'FLUXO-02')
-//   - nome: string (required, max size: 150) - Nome da rota
-//   - urlWta: string (optional, max size: 500)
-//   - projetoWta: string (optional, max size: 150)
-//   - rotaWtaBuscar: string (optional, max size: 200)
-//   - rotaPdvsyncEnviar: string (optional, max size: 200)
-//   - direcao: string (required, enum: 'enviar_pdvsync', 'enviar_wta', 'monitor', 'online_direto')
-//
-// ===============================================================
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -198,13 +120,16 @@ service cloud.firestore {
 
     function isValidWorkflowRoute(data) {
       return hasRequiredFields(['workflowId', 'fluxo', 'nome', 'direcao']) &&
-             hasOnlyAllowedFields(['id', 'workflowId', 'fluxo', 'nome', 'urlWta', 'projetoWta', 'rotaWtaBuscar', 'rotaPdvsyncEnviar', 'direcao']) &&
+             hasOnlyAllowedFields(['id', 'workflowId', 'fluxo', 'nome', 'urlWta', 'projetoWta', 'rotaWtaBuscar', 'rotaPdvsyncEnviar', 'direcao', 'metodoHttp', 'descricao', 'status']) &&
              data.workflowId is string &&
              data.fluxo is string && data.fluxo.size() <= 30 &&
              data.nome is string && data.nome.size() <= 150 &&
              data.direcao in ['enviar_pdvsync', 'enviar_wta', 'monitor', 'online_direto'] &&
              (!('urlWta' in data) || (data.urlWta is string && data.urlWta.size() <= 500)) &&
-             (!('projetoWta' in data) || (data.projetoWta is string && data.projetoWta.size() <= 150));
+             (!('projetoWta' in data) || (data.projetoWta is string && data.projetoWta.size() <= 150)) &&
+             (!('metodoHttp' in data) || (data.metodoHttp is string)) &&
+             (!('descricao' in data) || (data.descricao is string)) &&
+             (!('status' in data) || (data.status is string));
     }
 
     function isValidKnowledgeDoc(data) {

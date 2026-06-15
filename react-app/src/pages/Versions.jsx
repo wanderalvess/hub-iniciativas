@@ -5,6 +5,41 @@ import { History, Tag, Rocket, Paintbrush, ShieldAlert, CheckCircle } from 'luci
 const Versions = () => {
   const versionsData = [
     {
+      version: '1.1.0',
+      date: '15 de Junho de 2026',
+      title: 'Modo Claro & Importador Inteligente',
+      description: 'Melhorias de legibilidade no Modo Claro, importador inteligente de workflows a partir de markdown e fluxos dinâmicos bidirecionais.',
+      features: [
+        {
+          category: 'Ajustes de Acessibilidade & Modo Claro',
+          icon: Paintbrush,
+          color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+          items: [
+            'Correção de textos cinza escuro ilegíveis em fundo claro no explorador de rotas, sugestão de melhorias, cronograma de execução, mapeamento de projetos e fluxos.',
+            'Cores dos diagramas Mermaid auto-ajustáveis dinamicamente ao alternar o tema do sistema.',
+            'Ajuste nos modais de criação de workflow para exibição correta e rolável em zoom de 100% sem cortes de tela.'
+          ]
+        },
+        {
+          category: 'Workflows & Importador Inteligente',
+          icon: Rocket,
+          color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+          items: [
+            'Importador inteligente de arquivos markdown (.md) que infere e autopreenche automaticamente as propriedades do workflow (Origem, Destino, Integradores e Cadeia de Sistemas).',
+            'Suporte a fluxos bidirecionais e encadeados contínuos (ex: X -> Y -> Z ou X <-> Y <-> Z <-> A) com animações de sinal em tempo real.'
+          ]
+        },
+        {
+          category: 'Infraestrutura & Deploy',
+          icon: ShieldAlert,
+          color: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+          items: [
+            'Inclusão do servidor web sirv-cli no comando de inicialização de produção para garantir que a revisão do Cloud Run suba corretamente.'
+          ]
+        }
+      ]
+    },
+    {
       version: '1.0.0',
       date: '14 de Junho de 2026',
       title: 'Lançamento Inicial & Módulos Avançados',

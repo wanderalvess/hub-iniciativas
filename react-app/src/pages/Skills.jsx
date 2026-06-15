@@ -219,6 +219,71 @@ const Skills = () => {
     }
   };
 
+  const handleSeedSkills = async () => {
+    setIsSaving(true);
+    try {
+      const seedData = [
+        {
+          name: "Revisão de Código para Boas Práticas (WTA/WinThor API)",
+          description: "Analisa rotas Node.js ou Java verificando integridade de transações, injeção de SQL e performance de queries.",
+          promptTemplate: "Você é um revisor de código especialista sênior.\nAnalise o seguinte trecho de código da API do ERP Winthor e identifique:\n1. Vulnerabilidades de segurança (ex: injeção de SQL).\n2. Problemas de performance (ex: queries sem índice, conexões não fechadas).\n3. Adesão às boas práticas de clean code.\n\nTrecho de código:\n{{codigo}}",
+          arguments: [{ name: "codigo", description: "Código fonte da API a ser analisado" }],
+          type: "Assistente de Código",
+          status: "Ativo",
+          impact: "Alto",
+          businessGoal: "Garantir estabilidade e segurança das APIs Winthor."
+        },
+        {
+          name: "Gerador de Especificação Jolt (Playground Helper)",
+          description: "Gera a especificação de shift e default do JOLT com base em um JSON de entrada e saída esperado.",
+          promptTemplate: "Você é um especialista em transformações JSON usando Jolt.\nDado o seguinte JSON de entrada e o JSON de saída esperado, gere uma especificação Jolt válida (Jolt Spec) contendo as operações de 'shift' ou 'default' necessárias.\n\nJSON de Entrada:\n{{json_entrada}}\n\nJSON de Saída Esperado:\n{{json_saida}}",
+          arguments: [
+            { name: "json_entrada", description: "JSON bruto recebido na integração" },
+            { name: "json_saida", description: "JSON esperado no formato de destino" }
+          ],
+          type: "Gerador de Prompts",
+          status: "Ativo",
+          impact: "Médio",
+          businessGoal: "Acelerar o mapeamento de integrações no Jolt Playground."
+        },
+        {
+          name: "Validador de Query Oracle SQL (Performance Analyzer)",
+          description: "Explica planos de execução Oracle SQL e sugere índices ou reescrita de subqueries.",
+          promptTemplate: "Como especialista em bancos de dados Oracle Database, analise a seguinte consulta SQL:\n\n{{sql_query}}\n\nSugira:\n1. Criação de índices ideais.\n2. Reescritas de JOINs ou subqueries ineficientes.\n3. Explicação de gargalos no plano de execução provável.",
+          arguments: [{ name: "sql_query", description: "Consulta SQL a ser analisada" }],
+          type: "SQL Query",
+          status: "Ativo",
+          impact: "Alto",
+          businessGoal: "Otimizar tempo de resposta de relatórios e rotinas em lote."
+        },
+        {
+          name: "Gerador de Mensagem de Daily (Teams Format)",
+          description: "Estrutura mensagens profissionais de Daily a partir de anotações esparsas.",
+          promptTemplate: "Você é um assistente ágil de comunicação.\nConvertas as seguintes anotações esparsas sobre o trabalho em uma mensagem de Daily organizada, profissional e formal para enviar no canal do Microsoft Teams.\n\nO que fiz ontem:\n{{feito_ontem}}\n\nO que farei hoje:\n{{fazer_hoje}}\n\nImpedimentos:\n{{impedimentos}}",
+          arguments: [
+            { name: "feito_ontem", description: "O que foi concluído no dia anterior" },
+            { name: "fazer_hoje", description: "O foco do dia de trabalho" },
+            { name: "impedimentos", description: "Qualquer bloqueador atual" }
+          ],
+          type: "Gerador de Prompts",
+          status: "Ativo",
+          impact: "Baixo",
+          businessGoal: "Padronizar e profissionalizar a comunicação das dailies do time."
+        }
+      ];
+
+      for (const skill of seedData) {
+        await addAISkill(skill, user);
+      }
+      addToast('Skills iniciais carregadas!', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Erro ao carregar skills.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -230,6 +295,16 @@ const Skills = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start md:self-auto w-full md:w-auto">
+          {skills.length === 0 && (
+            <button
+              onClick={handleSeedSkills}
+              disabled={isSaving}
+              className="btn-secondary py-2 px-3 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 w-full sm:w-auto"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Carga Inicial</span>
+            </button>
+          )}
           <button
             onClick={exportSkillsToMarkdown}
             className="btn-secondary py-2 px-3 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 w-full sm:w-auto"
