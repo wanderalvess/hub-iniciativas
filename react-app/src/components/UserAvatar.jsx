@@ -30,7 +30,7 @@ const UserAvatar = ({ photoURL, displayName, sizeClass = "h-10 w-10", textClass 
   };
 
   return (
-    <div className={`${sizeClass} rounded-full border border-slate-700/80 p-0.5 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-[0_0_10px_rgba(99,102,241,0.2)] select-none shrink-0`}>
+    <div className={`${sizeClass} rounded-full border border-slate-700/80 p-0.5 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white avatar-fallback shadow-[0_0_10px_rgba(99,102,241,0.2)] select-none shrink-0`}>
       <span className={textClass}>{getInitials(displayName)}</span>
     </div>
   );

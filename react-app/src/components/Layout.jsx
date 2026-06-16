@@ -355,7 +355,9 @@ const Layout = ({ children }) => {
       .light-theme .bg-indigo-600 p,
       .light-theme .bg-indigo-600 a,
       .light-theme .btn-primary,
-      .light-theme .btn-primary * {
+      .light-theme .btn-primary *,
+      .light-theme .avatar-fallback,
+      .light-theme .avatar-fallback * {
         color: #ffffff !important;
       }
       .light-theme .bg-slate-800 {
@@ -436,6 +438,24 @@ const Layout = ({ children }) => {
       .light-theme .text-rose-300 {
         color: #be123c !important;
       }
+      .light-theme .logo-text {
+        background: none !important;
+        -webkit-text-fill-color: #0f172a !important;
+        color: #0f172a !important;
+      }
+      .light-theme header, 
+      .light-theme .sticky {
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        border-color: #cbd5e1 !important;
+      }
+      .light-theme .bg-slate-950\\/40 {
+        background-color: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+      }
+      .light-theme select option {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+      }
     `;
   }, [user?.themePrimary, user?.themeSecondary]);
 
@@ -505,7 +525,7 @@ const Layout = ({ children }) => {
                 <circle cx="16" cy="16" r="2" fill="#ffffff" />
               </svg>
             </div>
-            <span className="font-black tracking-tight text-lg bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent hover:brightness-110 transition-all">
+            <span className="font-black tracking-tight text-lg bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent hover:brightness-110 transition-all logo-text">
               Hub de Iniciativas
             </span>
           </div>

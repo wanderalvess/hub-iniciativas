@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import BentoCard from '../components/BentoCard';
-import { User, Save, Users, Calendar, Mail, Image, Link2, Key, Briefcase, Check } from 'lucide-react';
+import { User, Save, Users, Calendar, Mail, Image, Link2, Key, Briefcase, Check, Github, Linkedin, MessageCircle, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import UserAvatar from '../components/UserAvatar';
 import { listenTeams } from '../services/firestore';
@@ -34,6 +34,11 @@ const Profile = () => {
   const [tdnToken, setTdnToken] = useState('');
   const [themePrimary, setThemePrimary] = useState('#6366f1');
   const [themeSecondary, setThemeSecondary] = useState('#a855f7');
+  const [themeMode, setThemeMode] = useState('dark');
+  const [bio, setBio] = useState('');
+  const [githubUrl, setGithubUrl] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
   const [teams, setTeams] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -57,6 +62,11 @@ const Profile = () => {
       setTdnToken(user.tdnToken || '');
       setThemePrimary(user.themePrimary || '#6366f1');
       setThemeSecondary(user.themeSecondary || '#a855f7');
+      setThemeMode(user.themeMode || 'dark');
+      setBio(user.bio || '');
+      setGithubUrl(user.githubUrl || '');
+      setLinkedinUrl(user.linkedinUrl || '');
+      setWhatsapp(user.whatsapp || '');
     }
   }, [user]);
 
@@ -101,8 +111,17 @@ const Profile = () => {
         tdnUrl,
         tdnToken,
         themePrimary,
-        themeSecondary
+        themeSecondary,
+        themeMode,
+        bio,
+        githubUrl,
+        linkedinUrl,
+        whatsapp
       });
+      
+      // Atualizar o localStorage para refletir a mudança instantaneamente
+      localStorage.setItem('themeMode', themeMode);
+      
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
@@ -134,7 +153,7 @@ const Profile = () => {
         
         {/* COLUNA ESQUERDA: PERFIL & CONEXÕES */}
         <div className="space-y-8">
-          <BentoCard title="Meu Perfil" subtitle="Edição cadastral" icon={User}>
+          <BentoCard title="Meu Perfil" subtitle="Edição cadastral e Redes Sociais" icon={User}>
         
         {/* Foto e Status */}
         <div className="flex items-center gap-5 mb-8">
@@ -267,6 +286,61 @@ const Profile = () => {
             />
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+              <FileText className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Sobre mim (Biografia)</span>
+            </label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Fale um pouco sobre você, sua atuação, squads em que atua e tecnologias de interesse..."
+              className="premium-input min-h-[80px] text-xs resize-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+                <Github className="h-3.5 w-3.5 text-indigo-400" />
+                <span>GitHub</span>
+              </label>
+              <input
+                type="text"
+                value={githubUrl}
+                onChange={(e) => setGithubUrl(e.target.value)}
+                placeholder="https://github.com/usuario"
+                className="premium-input text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+                <Linkedin className="h-3.5 w-3.5 text-indigo-400" />
+                <span>LinkedIn</span>
+              </label>
+              <input
+                type="text"
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+                placeholder="https://linkedin.com/in/usuario"
+                className="premium-input text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+                <MessageCircle className="h-3.5 w-3.5 text-indigo-400" />
+                <span>WhatsApp / Tel</span>
+              </label>
+              <input
+                type="text"
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="(11) 99999-9999"
+                className="premium-input text-xs"
+              />
+            </div>
+          </div>
+
           {/* Dados Informativos Somente Leitura */}
           <div className="p-4 bg-slate-950/40 border border-slate-900 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-3">
@@ -305,91 +379,44 @@ const Profile = () => {
         </form>
 
           </BentoCard>
- 
-          <BentoCard title="Conexões de APIs" subtitle="Integração Jira &amp; TDN" icon={Link2}>
-        <form onSubmit={handleSave} className="space-y-5">
-          <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">Configuração Jira</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">URL Base do Jira</label>
-                <input
-                  type="text"
-                  value={jiraUrl}
-                  onChange={(e) => setJiraUrl(e.target.value)}
-                  placeholder="https://jira.empresa.com"
-                  className="premium-input text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center gap-1">
-                  <Key className="h-3 w-3" />
-                  <span>Token de Acesso / Senha</span>
-                </label>
-                <input
-                  type="password"
-                  value={jiraToken}
-                  onChange={(e) => setJiraToken(e.target.value)}
-                  placeholder="Seu token de acesso"
-                  className="premium-input text-xs bg-slate-950/60"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-4 border-t border-slate-800/40">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">Configuração TDN (Confluence)</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">URL Base do TDN</label>
-                <input
-                  type="text"
-                  value={tdnUrl}
-                  onChange={(e) => setTdnUrl(e.target.value)}
-                  placeholder="https://tdn.empresa.com"
-                  className="premium-input text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center gap-1">
-                  <Key className="h-3 w-3" />
-                  <span>Token de Acesso</span>
-                </label>
-                <input
-                  type="password"
-                  value={tdnToken}
-                  onChange={(e) => setTdnToken(e.target.value)}
-                  placeholder="Seu token do TDN"
-                  className="premium-input text-xs bg-slate-950/60"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-2 border-t border-slate-800/40">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="btn-primary py-2.5 text-xs flex items-center justify-center gap-2"
-            >
-              {isSaving ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  <span>Salvar Conexões</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-          </BentoCard>
         </div>
  
-        {/* COLUNA DIREITA: TEMAS & APARÊNCIA */}
+        {/* COLUNA DIREITA: TEMAS, APARÊNCIA & CONEXÕES */}
         <div className="space-y-8">
-          <BentoCard title="Aparência &amp; Temas Neon" subtitle="Escolha as cores primárias do sistema" icon={Image}>
+          <BentoCard title="Aparência &amp; Temas Neon" subtitle="Escolha o tema e as cores primárias do sistema" icon={Image}>
         <form onSubmit={handleSave} className="space-y-6">
+          
+          {/* SELETOR DE TEMA CLARO E ESCURO */}
+          <div className="space-y-3">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Modo de Aparência</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setThemeMode('light')}
+                className={`flex items-center justify-center gap-2 p-3 rounded-xl border transition-all text-xs font-bold ${
+                  themeMode === 'light'
+                    ? 'bg-white text-slate-900 border-white shadow-lg'
+                    : 'bg-slate-950/20 border-slate-900 text-slate-400 hover:border-slate-800'
+                }`}
+              >
+                <span className="text-base">☀️</span>
+                <span>Modo Claro</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeMode('dark')}
+                className={`flex items-center justify-center gap-2 p-3 rounded-xl border transition-all text-xs font-bold ${
+                  themeMode === 'dark'
+                    ? 'bg-slate-900 text-white border-indigo-500/80 shadow-[0_0_10px_rgba(99,102,241,0.15)]'
+                    : 'bg-slate-950/20 border-slate-900 text-slate-400 hover:border-slate-800'
+                }`}
+              >
+                <span className="text-base">🌙</span>
+                <span>Modo Escuro</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             <div className="space-y-3">
@@ -434,7 +461,7 @@ const Profile = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-white">Cor Primária</p>
+                    <p className="text-xs font-bold text-slate-200">Cor Primária</p>
                     <p className="text-[10px] text-slate-500">Glow de botões e links ativos</p>
                   </div>
                   <input
@@ -447,7 +474,7 @@ const Profile = () => {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-white">Cor Secundária</p>
+                    <p className="text-xs font-bold text-slate-200">Cor Secundária</p>
                     <p className="text-[10px] text-slate-500">Gradientes e decorações secundárias</p>
                   </div>
                   <input
@@ -458,35 +485,36 @@ const Profile = () => {
                   />
                 </div>
               </div>
-
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40 flex items-center justify-center gap-3 relative overflow-hidden"
-                   style={{ borderColor: `${themePrimary}30` }}>
-                <div className="absolute inset-0 pointer-events-none opacity-[0.05]"
-                     style={{ backgroundImage: `linear-gradient(to bottom right, ${themePrimary}, ${themeSecondary})` }} />
-                <button
-                  type="button"
-                  className="font-semibold text-xs rounded-xl px-4 py-2 text-white transition-all pointer-events-none"
-                  style={{ 
-                    backgroundColor: themePrimary, 
-                    boxShadow: `0 4px 15px ${themePrimary}40`
-                  }}
-                >
-                  Botão Destaque
-                </button>
-                <span className="text-[10px] font-bold uppercase tracking-wider border px-2 py-0.5 rounded"
-                      style={{ 
-                        color: themeSecondary, 
-                        borderColor: `${themeSecondary}30`,
-                        backgroundColor: `${themeSecondary}10`
-                      }}>
-                  Badge Teste
-                </span>
-              </div>
             </div>
             
           </div>
+          
+          {/* Conexões de APIs */}
+          <div className="pt-6 border-t border-slate-800/40">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-4 flex items-center gap-2">
+              <Link2 className="h-4 w-4" /> Configurações de API
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Jira URL</label>
+                <input type="text" value={jiraUrl} onChange={(e) => setJiraUrl(e.target.value)} className="premium-input text-xs" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Jira Token</label>
+                <input type="password" value={jiraToken} onChange={(e) => setJiraToken(e.target.value)} className="premium-input text-xs" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">TDN URL</label>
+                <input type="text" value={tdnUrl} onChange={(e) => setTdnUrl(e.target.value)} className="premium-input text-xs" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5">TDN Token</label>
+                <input type="password" value={tdnToken} onChange={(e) => setTdnToken(e.target.value)} className="premium-input text-xs" />
+              </div>
+            </div>
+          </div>
 
-          <div className="flex justify-end pt-2 border-t border-slate-800/40">
+          <div className="flex justify-end pt-2">
             <button
               type="submit"
               disabled={isSaving}
@@ -497,7 +525,7 @@ const Profile = () => {
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  <span>Salvar Tema</span>
+                  <span>Salvar Preferências</span>
                 </>
               )}
             </button>

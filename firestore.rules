@@ -64,7 +64,7 @@ service cloud.firestore {
 
     function isValidUser(data) {
       return hasRequiredFields(['uid', 'email', 'displayName', 'teamId', 'role', 'createdAt']) &&
-             hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'teamId', 'role', 'createdAt', 'jiraUrl', 'jiraToken', 'tdnUrl', 'tdnToken', 'themePrimary', 'themeSecondary', 'jobRole', 'associatedTeams']) &&
+             hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'teamId', 'role', 'createdAt', 'jiraUrl', 'jiraToken', 'tdnUrl', 'tdnToken', 'themePrimary', 'themeSecondary', 'jobRole', 'associatedTeams', 'bio', 'githubUrl', 'linkedinUrl', 'whatsapp']) &&
              data.uid == request.auth.uid &&
              isValidEmail(data.email) &&
              data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 100 &&
@@ -72,7 +72,11 @@ service cloud.firestore {
              data.teamId is string &&
              data.role in ['admin', 'member'] &&
              (!('jobRole' in data) || data.jobRole is string) &&
-             (!('associatedTeams' in data) || data.associatedTeams is list);
+             (!('associatedTeams' in data) || data.associatedTeams is list) &&
+             (!('bio' in data) || data.bio is string) &&
+             (!('githubUrl' in data) || data.githubUrl == '' || isValidUrl(data.githubUrl)) &&
+             (!('linkedinUrl' in data) || data.linkedinUrl == '' || isValidUrl(data.linkedinUrl)) &&
+             (!('whatsapp' in data) || data.whatsapp is string);
     }
 
     function isValidFeedPost(data) {
@@ -152,13 +156,7 @@ service cloud.firestore {
 
     // 1. Coleção de Usuários
     match /users/{userId} {
-      allow read: if isAuthenticated() && (
-        isOwner(userId) || 
-        (
-          resource.data.associatedTeams is list && 
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId in resource.data.associatedTeams
-        )
-      );
+      allow read: if isAuthenticated();
       
       // Criação inicial e atualizações permitidas apenas pelo próprio dono
       allow create: if isAuthenticated() && isValidUser(request.resource.data) && isOwner(userId);

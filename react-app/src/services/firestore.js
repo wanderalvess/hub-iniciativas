@@ -338,6 +338,8 @@ export const listenTeamMembers = (teamId, callback) => {
       members.push({ uid: doc.id, ...doc.data() });
     });
     callback(members);
+  }, (err) => {
+    console.error("Erro no listenTeamMembers:", err);
   });
 };
 

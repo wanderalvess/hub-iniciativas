@@ -7,7 +7,7 @@ import { listenTeamMembers, listenAuditLogs } from '../services/firestore';
 import BentoCard from '../components/BentoCard';
 import UserAvatar from '../components/UserAvatar';
 import { useToast } from '../context/ToastContext';
-import { Users, Link2, Copy, Check, Calendar, Activity, AlertTriangle, ShieldCheck, Mail, UserPlus } from 'lucide-react';
+import { Users, Link2, Copy, Check, Calendar, Activity, AlertTriangle, ShieldCheck, Mail, UserPlus, Github, Linkedin, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const getRoleBadgeClass = (role) => {
@@ -197,22 +197,70 @@ const Team = () => {
               {members.map((member) => (
                 <div 
                   key={member.uid} 
-                  className="flex items-center justify-between p-4 rounded-xl bg-slate-950/40 border border-slate-900 hover:border-slate-800 transition-all group relative overflow-hidden"
+                  className="flex flex-col p-4 rounded-xl bg-slate-950/40 border border-slate-900 hover:border-slate-800 transition-all group relative overflow-hidden space-y-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <UserAvatar photoURL={member.photoURL} displayName={member.displayName} sizeClass="h-11 w-11" textClass="text-sm font-bold" />
-                    <div>
-                      <h4 className="font-bold text-white text-xs group-hover:text-indigo-400 transition-colors">
-                        {member.displayName || 'Membro do Time'}
-                      </h4>
-                      <p className="text-[10px] text-slate-500 truncate max-w-[150px]">{member.email}</p>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <UserAvatar photoURL={member.photoURL} displayName={member.displayName} sizeClass="h-11 w-11" textClass="text-sm font-bold" />
+                      <div>
+                        <h4 className="font-bold text-white text-xs group-hover:text-indigo-400 transition-colors">
+                          {member.displayName || 'Membro do Time'}
+                        </h4>
+                        <p className="text-[10px] text-slate-500 truncate max-w-[150px]">{member.email}</p>
+                      </div>
                     </div>
+                    
+                    {/* Badge de Cargo */}
+                    <span className={`text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded-full border ${getRoleBadgeClass(member.jobRole)}`}>
+                      {member.jobRole || 'Membro'}
+                    </span>
                   </div>
-                  
-                  {/* Badge de Cargo */}
-                  <span className={`text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded-full border ${getRoleBadgeClass(member.jobRole)}`}>
-                    {member.jobRole || 'Membro'}
-                  </span>
+
+                  {/* Biografia do Integrante */}
+                  {member.bio && (
+                    <p className="text-[11px] text-slate-400 font-medium leading-relaxed italic bg-slate-950/50 p-2.5 rounded-lg border border-slate-900/30">
+                      "{member.bio}"
+                    </p>
+                  )}
+
+                  {/* Redes Sociais */}
+                  {(member.githubUrl || member.linkedinUrl || member.whatsapp) && (
+                    <div className="flex items-center gap-2.5 pt-1 border-t border-slate-900/40">
+                      {member.githubUrl && (
+                        <a 
+                          href={member.githubUrl.startsWith('http') ? member.githubUrl : `https://${member.githubUrl}`}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-all"
+                          title="Perfil do GitHub"
+                        >
+                          <Github className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                      {member.linkedinUrl && (
+                        <a 
+                          href={member.linkedinUrl.startsWith('http') ? member.linkedinUrl : `https://${member.linkedinUrl}`}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-all"
+                          title="Perfil do LinkedIn"
+                        >
+                          <Linkedin className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                      {member.whatsapp && (
+                        <a 
+                          href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-all"
+                          title="Enviar Mensagem no WhatsApp"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

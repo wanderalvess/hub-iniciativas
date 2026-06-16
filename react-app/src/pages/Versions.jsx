@@ -5,6 +5,33 @@ import { History, Tag, Rocket, Paintbrush, ShieldAlert, CheckCircle } from 'luci
 const Versions = () => {
   const versionsData = [
     {
+      version: '1.3.0',
+      date: '16 de Junho de 2026',
+      title: 'Revitalização do Perfil & Sincronização de Times',
+      description: 'Correção do layout em duas colunas da página de perfil, adição de redes sociais e melhorias de contraste no Modo Claro.',
+      features: [
+        {
+          category: 'Página de Perfil (/profile)',
+          icon: Rocket,
+          color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+          items: [
+            'Correção do layout quebrado na seção de cores e reestruturação em duas colunas do perfil.',
+            'Integração de dados de Redes Sociais (GitHub, LinkedIn e WhatsApp) e Biografia.',
+            'Salvamento e associação multi-time funcional no Firestore.'
+          ]
+        },
+        {
+          category: 'Tema Claro & Acessibilidade',
+          icon: Paintbrush,
+          color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+          items: [
+            'Ajuste de contraste e legibilidade no avatar de iniciais de fallback, garantindo que o texto permaneça branco no modo claro.',
+            'Correção de conflito de cores e legibilidade de textos e inputs no modo claro da página de perfil.'
+          ]
+        }
+      ]
+    },
+    {
       version: '1.2.0',
       date: '15 de Junho de 2026',
       title: 'Secret Vault & Módulo de Governança',
